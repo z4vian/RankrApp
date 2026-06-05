@@ -56,6 +56,28 @@ export default function SearchLayout() {
         }}
       />
       <Stack.Screen
+        name="books"
+        options={{
+          title: 'Books',
+          headerLeft: () => <BackButton />,
+          headerStyle: { backgroundColor: BG },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="tv"
+        options={{
+          title: 'TV Shows',
+          headerLeft: () => <BackButton />,
+          headerStyle: { backgroundColor: BG },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
         name="detail"
         options={{
           title: 'Add to List',

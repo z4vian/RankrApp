@@ -1,3 +1,5 @@
+import { useToast } from '@/components';
+import { exportUserData, userDataToJSON } from '@/lib/account';
 import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
@@ -5,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator, Alert, Image, KeyboardAvoidingView,
-    Platform, ScrollView, StyleSheet, Text,
+    Modal, Platform, ScrollView, StyleSheet, Text,
     TextInput, TouchableOpacity, View,
 } from 'react-native';
 
@@ -17,6 +19,7 @@ const BORDER = '#2a2a38';
 
 export default function ProfileSettings() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState('');
@@ -28,6 +31,10 @@ export default function ProfileSettings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [activeSection, setActiveSection] = useState<'profile' | 'password'>('profile');
+
+  // Account / data-export state
+  const [exporting, setExporting] = useState(false);
+  const [exportJson, setExportJson] = useState<string | null>(null);
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -54,6 +61,10 @@ export default function ProfileSettings() {
   };
 
   const handlePickAvatar = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Unavailable', 'Photos are only available on iOS and Android.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -93,27 +104,99 @@ export default function ProfileSettings() {
         avatar_url: avatarUrl,
       });
     setSaving(false);
-    if (error) Alert.alert('Error', error.message);
-    else Alert.alert('Saved', 'Profile updated successfully!');
+    if (error) showToast(error.message, { tone: 'error' });
+    else showToast('Profile updated', { tone: 'success' });
   };
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      showToast('Passwords do not match', { tone: 'error' });
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      showToast('Password must be at least 6 characters', { tone: 'error' });
       return;
     }
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSaving(false);
-    if (error) Alert.alert('Error', error.message);
+    if (error) showToast(error.message, { tone: 'error' });
     else {
-      Alert.alert('Success', 'Password updated!');
+      showToast('Password updated', { tone: 'success' });
       setNewPassword('');
       setConfirmPassword('');
+    }
+  };
+
+  /**
+   * Export the user's data. Tries native share sheet via expo-sharing when
+   * available (writes a file via expo-file-system first); otherwise opens a
+   * scrollable modal where the JSON can be copied via expo-clipboard. All
+   * three modules are loaded via dynamic require so a missing install doesn't
+   * crash the screen — the modal fallback always works.
+   */
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      const data = await exportUserData();
+      const json = userDataToJSON(data);
+
+      // Try the native share-sheet path first.
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const Sharing = require('expo-sharing');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const FileSystem = require('expo-file-system');
+        if (
+          Sharing &&
+          FileSystem &&
+          typeof Sharing.isAvailableAsync === 'function' &&
+          typeof Sharing.shareAsync === 'function' &&
+          typeof FileSystem.writeAsStringAsync === 'function' &&
+          FileSystem.cacheDirectory
+        ) {
+          const available = await Sharing.isAvailableAsync();
+          if (available) {
+            const filename = `rankr-export-${Date.now()}.json`;
+            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+            await FileSystem.writeAsStringAsync(fileUri, json);
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/json',
+              dialogTitle: 'Export Rankr data',
+              UTI: 'public.json',
+            });
+            showToast('Export ready', { tone: 'success' });
+            setExporting(false);
+            return;
+          }
+        }
+      } catch {
+        // expo-sharing / expo-file-system not installed — fall through to modal.
+      }
+
+      // Fallback: show JSON in a modal with a copy-to-clipboard button.
+      setExportJson(json);
+      showToast('Export ready — review below', { tone: 'success' });
+    } catch (err: any) {
+      showToast(err?.message ?? 'Could not export data', { tone: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleCopyExport = async () => {
+    if (!exportJson) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Clipboard = require('expo-clipboard');
+      if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
+        await Clipboard.setStringAsync(exportJson);
+        showToast('Copied to clipboard', { tone: 'success' });
+        return;
+      }
+      throw new Error('Clipboard not available');
+    } catch {
+      showToast('Clipboard not available on this device', { tone: 'error' });
     }
   };
 
@@ -283,8 +366,85 @@ export default function ProfileSettings() {
           </View>
         )}
 
+        {/* ---- Account section (Phase 5) ---- */}
+        <View style={styles.accountSection}>
+          <Text style={styles.accountHeader}>ACCOUNT</Text>
+
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={handleExportData}
+            disabled={exporting}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.accountIcon, { backgroundColor: '#1e1a2e' }]}>
+              <Ionicons name="cloud-download-outline" size={18} color={PURPLE_LIGHT} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountTitle}>Export my data</Text>
+              <Text style={styles.accountSub}>Download a JSON copy of everything</Text>
+            </View>
+            {exporting ? (
+              <ActivityIndicator color={PURPLE_LIGHT} />
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color="#444" />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.accountRow, styles.accountRowDestructive]}
+            onPress={() => router.push('/profile-delete' as any)}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.accountIcon, { backgroundColor: '#2a1a1a' }]}>
+              <Ionicons name="trash-outline" size={18} color="#ef4444" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.accountTitle, styles.accountTitleDestructive]}>
+                Delete account
+              </Text>
+              <Text style={styles.accountSub}>Permanently remove all your data</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#5a2020" />
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 60 }} />
       </ScrollView>
+
+      {/* Export-JSON modal — shown when share-sheet path falls through. */}
+      <Modal
+        visible={exportJson !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setExportJson(null)}
+      >
+        <View style={styles.exportModalContainer}>
+          <View style={styles.exportModalHeader}>
+            <Text style={styles.exportModalTitle}>Your data</Text>
+            <TouchableOpacity onPress={() => setExportJson(null)} hitSlop={8}>
+              <Ionicons name="close" size={22} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={styles.exportModalScroll}
+            contentContainerStyle={styles.exportModalContent}
+          >
+            <Text selectable style={styles.exportModalJson}>
+              {exportJson ?? ''}
+            </Text>
+          </ScrollView>
+          <View style={styles.exportModalActions}>
+            <TouchableOpacity
+              style={styles.exportCopyBtn}
+              onPress={handleCopyExport}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="copy-outline" size={18} color="#fff" />
+              <Text style={styles.exportCopyLabel}>Copy to clipboard</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -351,4 +511,48 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4, shadowRadius: 8,
   },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  // ---- Account section ----
+  accountSection: { paddingHorizontal: 16, marginTop: 24, gap: 8 },
+  accountHeader: {
+    color: '#555', fontSize: 11, fontWeight: '700',
+    letterSpacing: 1.5, marginBottom: 8,
+  },
+  accountRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: CARD, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: BORDER,
+  },
+  accountRowDestructive: { borderColor: '#3a2020' },
+  accountIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  accountTitle: { color: '#fff', fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  accountTitleDestructive: { color: '#ef4444' },
+  accountSub: { color: '#666', fontSize: 12 },
+
+  // ---- Export-JSON modal ----
+  exportModalContainer: { flex: 1, backgroundColor: BG },
+  exportModalHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: BORDER,
+  },
+  exportModalTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  exportModalScroll: { flex: 1 },
+  exportModalContent: { padding: 16 },
+  exportModalJson: {
+    color: '#aaa',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 11,
+  },
+  exportModalActions: {
+    padding: 16, borderTopWidth: 1, borderTopColor: BORDER,
+  },
+  exportCopyBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, backgroundColor: PURPLE, borderRadius: 14, height: 48,
+  },
+  exportCopyLabel: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

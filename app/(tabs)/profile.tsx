@@ -106,6 +106,21 @@ export default function ProfileScreen() {
         <Text style={styles.headerTitle}>Profile</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
+            onPress={() => router.push('/year-in-review' as any)}
+            style={styles.yirPill}
+          >
+            <Ionicons name="sparkles" size={14} color="#fff" />
+            <Text style={styles.yirPillText}>Year in Review</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/users/search' as any)}
+            style={styles.findFriendsPill}
+            hitSlop={6}
+          >
+            <Ionicons name="person-add-outline" size={14} color="#fff" />
+            <Text style={styles.findFriendsPillText}>Find friends</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => router.push('/(tabs)/profile-settings' as any)}
             style={styles.iconBtn}
           >
@@ -260,6 +275,20 @@ const styles = StyleSheet.create({
     backgroundColor: CARD, justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: BORDER,
   },
+  yirPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    height: 36, paddingHorizontal: 12, borderRadius: 18,
+    backgroundColor: PURPLE,
+  },
+  yirPillText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  // Phase 5 bug fix (#3): the find-friends entry point was an icon-only 36×36
+  // button — users missed it. Labeled pill is much harder to overlook.
+  findFriendsPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    height: 36, paddingHorizontal: 12, borderRadius: 18,
+    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+  },
+  findFriendsPillText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   avatarSection: { alignItems: 'center', paddingBottom: 24 },
   avatar: {
     width: 88, height: 88, borderRadius: 44,

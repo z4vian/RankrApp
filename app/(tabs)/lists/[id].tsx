@@ -1,4 +1,5 @@
 import { useActiveList } from '@/lib/ListContext';
+import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -6,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, ScrollView,
+  ActivityIndicator, Alert, Image, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -47,6 +48,8 @@ const sentimentColor = (s: string | null) => {
   return PURPLE;
 };
 
+type Visibility = 'public' | 'private';
+
 export default function ListDetail() {
   const { id, title, description } = useLocalSearchParams<{
     id: string; title: string; description: string;
@@ -56,6 +59,8 @@ export default function ListDetail() {
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'rankings' | 'saved'>('rankings');
+  const [visibility, setVisibility] = useState<Visibility>('private');
+  const [visibilityUpdating, setVisibilityUpdating] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['70%', '95%'], []);
@@ -76,8 +81,48 @@ export default function ListDetail() {
     setLoading(false);
   };
 
+  const fetchListMeta = async () => {
+    // Pull the parent list's visibility flag. If the column doesn't exist
+    // (DB not migrated yet), default to 'private' silently.
+    const { data, error } = await supabase
+      .from('lists')
+      .select('visibility')
+      .eq('id', id)
+      .maybeSingle();
+    if (!error && data && (data as { visibility?: string }).visibility) {
+      const v = (data as { visibility?: string }).visibility;
+      if (v === 'public' || v === 'private') setVisibility(v);
+    }
+  };
+
+  const toggleVisibility = async () => {
+    if (visibilityUpdating) return;
+    const next: Visibility = visibility === 'public' ? 'private' : 'public';
+    const prev = visibility;
+    setVisibility(next); // optimistic
+    setVisibilityUpdating(true);
+    const { error } = await supabase
+      .from('lists')
+      .update({ visibility: next })
+      .eq('id', id);
+    setVisibilityUpdating(false);
+    if (error) {
+      setVisibility(prev); // revert
+      const isMissingColumn =
+        /column.*visibility/i.test(error.message) ||
+        /schema.*cache/i.test(error.message);
+      Alert.alert(
+        "Couldn't update visibility",
+        isMissingColumn
+          ? 'Make sure the database migration has been applied.'
+          : error.message,
+      );
+    }
+  };
+
   useFocusEffect(useCallback(() => {
     fetchItems();
+    fetchListMeta();
     setActiveList({ id: id as string, title: title as string, category: '' });
     return () => setActiveList(null);
   }, [id, title]));
@@ -141,6 +186,10 @@ export default function ListDetail() {
   };
 
   const handlePickPhoto = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Unavailable', 'Photos are only available on iOS and Android.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -154,9 +203,34 @@ export default function ListDetail() {
   const handleSaveEdit = async () => {
     if (!editingItem) return;
     setSaving(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaving(false);
+      Alert.alert('Not signed in', 'You must be signed in to save changes.');
+      return;
+    }
+
+    // Only upload photos that are still local URIs (not already-uploaded public HTTPS URLs).
+    let finalPhotoUrls: string[] = [];
+    try {
+      finalPhotoUrls = await Promise.all(
+        editPhotos.map((uri) => {
+          if (uri.startsWith('http://') || uri.startsWith('https://')) {
+            return Promise.resolve(uri);
+          }
+          return uploadListItemPhoto(uri, user.id);
+        })
+      );
+    } catch (err: any) {
+      setSaving(false);
+      Alert.alert('Upload failed', err?.message ?? 'Could not upload photos.');
+      return;
+    }
+
     await supabase
       .from('list_items')
-      .update({ notes: editNotes, photo_urls: editPhotos, sentiment: editSentiment })
+      .update({ notes: editNotes, photo_urls: finalPhotoUrls, sentiment: editSentiment })
       .eq('id', editingItem.id);
     setSaving(false);
     bottomSheetRef.current?.close();
@@ -200,7 +274,7 @@ export default function ListDetail() {
       <ScaleDecorator>
         <TouchableOpacity
           style={[styles.itemCard, isActive && styles.itemCardActive]}
-          onPress={() => openEditSheet(item)}
+          onPress={() => router.push(`/list-item/${item.id}` as any)}
           onLongPress={activeTab === 'rankings' ? drag : undefined}
           delayLongPress={200}
           activeOpacity={0.8}
@@ -290,6 +364,29 @@ export default function ListDetail() {
                     {description ? (
                       <Text style={styles.coverDesc}>{description}</Text>
                     ) : null}
+                    <TouchableOpacity
+                      style={[
+                        styles.visibilityPill,
+                        visibility === 'public' && styles.visibilityPillPublic,
+                      ]}
+                      onPress={toggleVisibility}
+                      activeOpacity={0.8}
+                      disabled={visibilityUpdating}
+                    >
+                      <Ionicons
+                        name={visibility === 'public' ? 'globe-outline' : 'lock-closed'}
+                        size={12}
+                        color={visibility === 'public' ? '#fff' : '#bbb'}
+                      />
+                      <Text
+                        style={[
+                          styles.visibilityPillText,
+                          visibility === 'public' && styles.visibilityPillTextPublic,
+                        ]}
+                      >
+                        {visibility === 'public' ? 'Public' : 'Private'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -542,6 +639,16 @@ const styles = StyleSheet.create({
   coverTitleArea: { position: 'absolute', bottom: 20, left: 20, right: 20 },
   coverTitle: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 4 },
   coverDesc: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
+  visibilityPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    alignSelf: 'flex-start', marginTop: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: BORDER,
+  },
+  visibilityPillPublic: { backgroundColor: PURPLE, borderColor: PURPLE },
+  visibilityPillText: { color: '#bbb', fontSize: 11, fontWeight: '600' },
+  visibilityPillTextPublic: { color: '#fff' },
   statsBar: {
     flexDirection: 'row', backgroundColor: CARD,
     marginHorizontal: 16, marginTop: -20,

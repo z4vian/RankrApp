@@ -1,15 +1,16 @@
+import { RAWG_API_KEY } from '@/lib/apiKeys';
 import ComparisonSheet, { RankedItem } from '@/lib/ComparisonSheet';
+import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, Image, ScrollView,
+  ActivityIndicator, Alert, FlatList, Image, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 
-const API_KEY = '1011d870d7cc4f368b013fd7d15101e0';
 const PURPLE = '#7C3AED';
 const PURPLE_LIGHT = '#A78BFA';
 const BG = '#0f0f13';
@@ -83,7 +84,7 @@ export default function GamesSearch() {
     setError('');
     try {
       const response = await fetch(
-        `https://api.rawg.io/api/games?key=${API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20`
+        `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20`
       );
       const data = await response.json();
       setResults(data.results ?? []);
@@ -122,6 +123,10 @@ export default function GamesSearch() {
   };
 
   const handlePickPhoto = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Unavailable', 'Photos are only available on iOS and Android.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -171,6 +176,13 @@ export default function GamesSearch() {
     setSaving(true);
     setSaveError('');
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaveError('You must be signed in to save.');
+      setSaving(false);
+      return;
+    }
+
     const { data: existing } = await supabase
       .from('list_items')
       .select('id')
@@ -184,6 +196,19 @@ export default function GamesSearch() {
       return;
     }
 
+    let uploadedUrls: string[] = [];
+    if (photos.length > 0) {
+      try {
+        uploadedUrls = await Promise.all(
+          photos.map((uri) => uploadListItemPhoto(uri, user.id))
+        );
+      } catch (err: any) {
+        Alert.alert('Upload failed', err?.message ?? 'Could not upload photos.');
+        setSaving(false);
+        return;
+      }
+    }
+
     const { data: inserted, error: insertError } = await supabase
       .from('list_items')
       .insert({
@@ -195,7 +220,7 @@ export default function GamesSearch() {
         category: selectedItem.category,
         sentiment,
         notes,
-        photo_urls: photos,
+        photo_urls: uploadedUrls,
         rank: null,
         bookmarked: false,
       })
@@ -228,6 +253,11 @@ export default function GamesSearch() {
         .eq('bookmarked', false);
 
       if (allUnranked && allUnranked.length >= 10) {
+        const sentimentOrder = { liked: 0, didnt_care: 1, didnt_like: 2 };
+        allUnranked.sort((a, b) =>
+          (sentimentOrder[a.sentiment as keyof typeof sentimentOrder] ?? 99) -
+          (sentimentOrder[b.sentiment as keyof typeof sentimentOrder] ?? 99)
+        );
         await Promise.all(
           allUnranked.map((item, index) => {
             const itemSentiment = (item.sentiment as Sentiment) ?? sentiment;
@@ -282,9 +312,9 @@ export default function GamesSearch() {
     if (newLo > newHi || !newItemId) {
       let newRank: number;
       if (newLo >= rankedPool.length) {
-        newRank = (rankedPool[0]?.rank ?? 10) + 0.5;
+        newRank = Math.min(10, (rankedPool[0]?.rank ?? 10) + 0.5);
       } else if (newHi < 0) {
-        newRank = (rankedPool[rankedPool.length - 1]?.rank ?? 1) - 0.5;
+        newRank = Math.max(1, (rankedPool[rankedPool.length - 1]?.rank ?? 1) - 0.5);
       } else {
         const above = rankedPool[newHi]?.rank ?? 10;
         const below = rankedPool[newLo]?.rank ?? 1;
@@ -398,21 +428,21 @@ export default function GamesSearch() {
                     onPress={() => handleSentiment('liked')}
                   >
                     <Text style={styles.sentimentText}>👍 Liked it</Text>
-                    <Text style={styles.sentimentRange}>Score range: 7–10</Text>
+                    <Text style={styles.sentimentRange}>Score range: 7.0 – 10.0</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.sentimentButton, { backgroundColor: '#444' }]}
                     onPress={() => handleSentiment('didnt_care')}
                   >
-                    <Text style={styles.sentimentText}>😐 Didn't care for it</Text>
-                    <Text style={styles.sentimentRange}>Score range: 4–7</Text>
+                    <Text style={styles.sentimentText}>😐 Didn&apos;t care for it</Text>
+                    <Text style={styles.sentimentRange}>Score range: 4.0 – 6.99</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.sentimentButton, { backgroundColor: '#c62828' }]}
                     onPress={() => handleSentiment('didnt_like')}
                   >
-                    <Text style={styles.sentimentText}>👎 Didn't like it</Text>
-                    <Text style={styles.sentimentRange}>Score range: 1–4</Text>
+                    <Text style={styles.sentimentText}>👎 Didn&apos;t like it</Text>
+                    <Text style={styles.sentimentRange}>Score range: 1.0 – 3.99</Text>
                   </TouchableOpacity>
                   <View style={styles.divider} />
                   <TouchableOpacity

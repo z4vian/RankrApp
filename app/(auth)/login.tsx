@@ -118,7 +118,7 @@ export default function Login() {
           style={styles.switchRow}
           onPress={() => router.push('/(auth)/signup' as any)}
         >
-          <Text style={styles.switchText}>Don't have an account? </Text>
+          <Text style={styles.switchText}>Don&apos;t have an account? </Text>
           <Text style={styles.switchLink}>Sign up</Text>
         </TouchableOpacity>
       </View>

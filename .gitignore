@@ -32,6 +32,9 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+# Keep the template tracked so contributors know what to set
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -41,3 +44,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Claude Code local state
+.claude/
