@@ -50,11 +50,17 @@ export type { PostAttachedItem, PostCardProps, PostVisibility } from './PostCard
 export { ProfileHeader } from './ProfileHeader';
 export type { ProfileHeaderProps, ProfileHeaderStats } from './ProfileHeader';
 
+export { PublicListCard } from './PublicListCard';
+export type { PublicListCardProps, PublicListOwner } from './PublicListCard';
+
 export { RankedItemCard } from './RankedItemCard';
 export type { RankedItemCardProps } from './RankedItemCard';
 
 export { RelativeTime } from './RelativeTime';
 export type { RelativeTimeProps } from './RelativeTime';
+
+export { SimilarityScore } from './SimilarityScore';
+export type { SimilarityScoreProps, SimilaritySize } from './SimilarityScore';
 
 export { StatNumber } from './StatNumber';
 export type { StatNumberProps, StatNumberTone } from './StatNumber';

@@ -1,0 +1,94 @@
+-- =============================================================================
+-- Rankr — Phase 7 Migration
+-- =============================================================================
+--
+-- Purpose:
+--   Adds a single nullable timestamp column on `profiles` that records when
+--   the user finished the onboarding flow. The onboarding screens
+--   (deferred from Phase 5 — see `docs/onboarding-flow-todo.md`) bump this
+--   to now() on completion, and the root layout checks it on session
+--   restore to decide whether to route the user into onboarding vs. the
+--   main app.
+--
+-- What this migration does:
+--   1. Adds `profiles.onboarded_at timestamptz` (nullable). No default.
+--
+-- What this migration deliberately does NOT do:
+--   - No new tables.
+--   - No new indexes (the column is read only on the single-row
+--     `WHERE id = auth.uid()` path, which is already covered by the PK).
+--   - No new RLS policies. The existing profile UPDATE policy
+--     (`auth.uid() = id`) already covers writes to this column, and the
+--     existing SELECT policies (per-owner + Phase-1's
+--     "Public profiles viewable by everyone") cover reads. There is nothing
+--     sensitive about `onboarded_at`; making it world-readable along with
+--     the rest of a public profile is fine.
+--
+-- Back-compat note:
+--   `onboarded_at` is NULL for every existing row. The client-side helper
+--   `lib/onboarding.ts → isOnboardingComplete` treats a user with a
+--   non-null `username` as "already onboarded" even when `onboarded_at` is
+--   NULL, so users who signed up before Phase 7 don't get force-routed
+--   through onboarding on next launch.
+--
+-- How to apply:
+--   1. (Recommended) Back up the project first: Supabase dashboard →
+--      Database → Backups → "Take a backup now". Or via CLI:
+--          pg_dump --host=db.<project-ref>.supabase.co \
+--                  --username=postgres --no-owner \
+--                  --file=rankr-pre-phase7.sql postgres
+--   2. Supabase dashboard → SQL Editor → "New query".
+--   3. Paste this ENTIRE file in.
+--   4. Click "Run". The verification SELECT under section 1 is a quick
+--      sanity check.
+--   5. No app changes are required for this migration to be safe — the
+--      column is just sitting there until the onboarding flow is shipped.
+--
+-- Idempotency:
+--   Safe to re-run. The single ALTER uses ADD COLUMN IF NOT EXISTS.
+--
+-- Dependencies:
+--   - Phase 1 (creates the `profiles.username` partial unique index that
+--     `isOnboardingComplete` uses as a back-compat signal). If Phase 1
+--     hasn't been applied, this migration still works — the back-compat
+--     branch will simply always-return-false for `username = null` users.
+-- =============================================================================
+
+
+-- -----------------------------------------------------------------------------
+-- 1. profiles.onboarded_at
+-- -----------------------------------------------------------------------------
+--
+-- Nullable timestamptz. NULL means "has not yet completed onboarding."
+-- The client bumps this to `now()` once the onboarding flow finishes via
+-- `lib/onboarding.ts → markOnboardingComplete`. We do not set a DEFAULT —
+-- existing rows must remain NULL so the back-compat clause in
+-- `isOnboardingComplete` (treat non-null username as "already onboarded")
+-- can do its job.
+
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS onboarded_at timestamptz;
+
+-- Verification:
+--   SELECT column_name, data_type, is_nullable, column_default
+--   FROM information_schema.columns
+--   WHERE table_schema = 'public'
+--     AND table_name = 'profiles'
+--     AND column_name = 'onboarded_at';
+--   -- Expect one row:
+--   --   onboarded_at  timestamp with time zone  YES  (null default)
+--
+--   -- Quick spot-check that existing rows are NULL:
+--   SELECT id, username, onboarded_at FROM public.profiles LIMIT 5;
+--   -- Expect: onboarded_at IS NULL for every pre-Phase-7 row.
+
+
+-- =============================================================================
+-- End of Phase 7 migration.
+-- =============================================================================
+--
+-- Rollback (uncomment + run if you need to undo this migration):
+--
+-- ALTER TABLE public.profiles DROP COLUMN IF EXISTS onboarded_at;
+--
+-- =============================================================================
