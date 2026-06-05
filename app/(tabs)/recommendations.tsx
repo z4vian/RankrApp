@@ -62,19 +62,25 @@ const SECTION_BG = '#14141e';
 const H_CARD_W = 130;
 const H_CARD_GAP = 10;
 
-type Category = 'movies' | 'games' | 'music';
+type Category = 'movies' | 'tv' | 'games' | 'music' | 'books';
 
-// Aspect ratios per category (width / height)
+// Aspect ratios per category (width / height). TV uses the same 2:3 portrait
+// as movies (matches TMDB poster orientation); books also use 2:3 (book
+// covers are tall portraits).
 const ASPECT: Record<Category, number> = {
   movies: 2 / 3,  // portrait poster
+  tv: 2 / 3,      // portrait poster (TMDB)
   games: 16 / 9,  // landscape cover
   music: 1,       // square artwork
+  books: 2 / 3,   // portrait cover
 };
 
-const TABS: { key: Category; label: string; icon: 'film' | 'game-controller' | 'musical-notes' }[] = [
+const TABS: { key: Category; label: string; icon: 'film' | 'tv' | 'game-controller' | 'musical-notes' | 'book' }[] = [
   { key: 'movies', label: 'Movies', icon: 'film' },
+  { key: 'tv', label: 'TV', icon: 'tv' },
   { key: 'games', label: 'Games', icon: 'game-controller' },
   { key: 'music', label: 'Music', icon: 'musical-notes' },
+  { key: 'books', label: 'Books', icon: 'book' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -335,8 +341,13 @@ function FeedView({ category, isActive }: FeedViewProps) {
 
   // No lists in this category
   if (!listsLoading && lists.length === 0) {
-    const categoryLabel =
-      category === 'movies' ? 'Movies' : category === 'games' ? 'Games' : 'Music';
+    const categoryLabel: string =
+      category === 'movies' ? 'Movies'
+      : category === 'tv' ? 'TV'
+      : category === 'games' ? 'Games'
+      : category === 'music' ? 'Music'
+      : category === 'books' ? 'Books'
+      : 'Movies';
     return (
       <ScrollView
         contentContainerStyle={styles.centeredState}
@@ -410,8 +421,14 @@ export default function RecommendationsScreen() {
         </View>
       </View>
 
-      {/* Category pill tabs */}
-      <View style={styles.tabRow}>
+      {/* Category pill tabs — horizontal scroll so 5 pills always fit even on
+          narrow phones. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabRow}
+        style={styles.tabScroll}
+      >
         {TABS.map((tab) => {
           const active = tab.key === activeCategory;
           return (
@@ -436,7 +453,7 @@ export default function RecommendationsScreen() {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* Feed — mount all tabs so state/cache persists on switch */}
       <View style={{ flex: 1 }}>
@@ -491,11 +508,17 @@ const styles = StyleSheet.create({
   },
 
   // ---- Category tabs ----
+  // tabScroll wraps a horizontal ScrollView. flexGrow: 0 keeps the row at its
+  // intrinsic height instead of taking the remaining vertical space.
+  tabScroll: {
+    flexGrow: 0,
+    marginBottom: 16,
+  },
   tabRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
+    alignItems: 'center',
   },
   tabPill: {
     flexDirection: 'row',

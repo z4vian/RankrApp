@@ -3,15 +3,19 @@
  *
  * Web-only home feed.  Metro picks this over index.tsx for web builds.
  *
- * Desktop (≥ 1024 px): feed is constrained to max-width 640 px and centred
- * in the content area, removing the dead horizontal space that plagues the
- * mobile layout on wide monitors.  The sidebar is handled by _layout.web.tsx;
- * this file only deals with the feed column itself.
+ * Layout breakdown:
+ *   - Mobile / tablet (< 1024 px):           single-column FlatList, identical
+ *                                            to native index.tsx.
+ *   - Narrow desktop (1024 ≤ w < 1280 px):   single column centred at
+ *                                            max-width 640 px (no right rail).
+ *   - Wide desktop (w ≥ 1280 px):            centred container with the feed
+ *                                            (max 640 px) on the left and a
+ *                                            320 px right rail showing
+ *                                            "Who to follow" suggestions.
  *
- * Mobile / tablet (< 1024 px): renders identically to index.tsx.
- *
- * We preserve every line of logic from index.tsx (getFeed, pagination, delete,
- * notification badge) — the only change is the wrapping View on desktop.
+ * SSR safety: the desktop / wide-desktop branches are gated by `hasMounted`,
+ * so the SSR pass always emits the mobile tree (which then hydrates cleanly).
+ * See _layout.web.tsx for the matching pattern.
  *
  * File ownership: web-dev  — do NOT edit index.tsx (native/frontend-dev).
  */
@@ -20,16 +24,30 @@ import { getFeed, type FeedItem } from '@/lib/feed';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 import { deletePost } from '@/lib/posts';
 import { useResponsive } from '@/lib/responsive';
+import {
+  followUser,
+  getSuggestedUsers,
+  type FollowUser,
+} from '@/lib/social';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, LoadingState, PostCard, RankedItemCard } from '@/components';
+import { colors, radius, spacing, typography } from '@/lib/theme';
+import {
+  Avatar,
+  EmptyState,
+  FollowButton,
+  LoadingState,
+  PostCard,
+  RankedItemCard,
+  useToast,
+} from '@/components';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Platform,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -37,11 +55,25 @@ import {
   View,
 } from 'react-native';
 
-const PURPLE = '#7C3AED';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
+// ---------------------------------------------------------------------------
+// Tokens / constants
+// ---------------------------------------------------------------------------
+
 const PAGE_SIZE = 30;
+
+/**
+ * Width thresholds — kept permissive so 1366×768 laptops still get the rail.
+ *
+ * - `>= 1024` triggers the centred desktop column (no rail).
+ * - `>= 1280` triggers the two-column layout with the right rail.
+ *
+ * Below 1280 the rail is hidden, not just empty — we don't fetch suggestions
+ * either, to avoid a wasted round-trip.
+ */
+const DESKTOP_MIN_WIDTH = 1024;
+const RAIL_MIN_WIDTH = 1280;
+
+const SUGGESTION_LIMIT = 5;
 
 // ---------------------------------------------------------------------------
 // Helpers (identical to index.tsx)
@@ -54,12 +86,148 @@ const feedItemKey = (item: FeedItem): string =>
   item.kind === 'post' ? `post:${item.post.id}` : item.event.id;
 
 // ---------------------------------------------------------------------------
-// Component
+// Right-rail subcomponents
+// ---------------------------------------------------------------------------
+
+interface SuggestionRowProps {
+  user: FollowUser;
+  onPressProfile: () => void;
+  onFollow: () => Promise<boolean>;
+}
+
+/**
+ * Single "Who to follow" row.  Owns its own follow-button loading state so
+ * each row can be tapped independently — we don't want one in-flight follow
+ * to disable the whole rail.
+ */
+function SuggestionRow({ user, onPressProfile, onFollow }: SuggestionRowProps) {
+  const [loading, setLoading] = useState(false);
+
+  const handleFollow = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await onFollow();
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, onFollow]);
+
+  const display = user.display_name ?? user.username ?? 'user';
+
+  return (
+    <Pressable
+      onPress={onPressProfile}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+        railStyles.row,
+        (hovered as boolean) && railStyles.rowHovered,
+        pressed && railStyles.rowPressed,
+      ]}
+    >
+      <Avatar uri={user.avatar_url} name={display} size={40} />
+      <View style={railStyles.rowText}>
+        <Text style={railStyles.displayName} numberOfLines={1}>{display}</Text>
+        {user.username ? (
+          <Text style={railStyles.username} numberOfLines={1}>@{user.username}</Text>
+        ) : null}
+        {user.bio ? (
+          <Text style={railStyles.bio} numberOfLines={2}>{user.bio}</Text>
+        ) : null}
+      </View>
+      <View style={railStyles.followWrap}>
+        <FollowButton
+          following={false}
+          loading={loading}
+          onPress={handleFollow}
+          size="sm"
+        />
+      </View>
+    </Pressable>
+  );
+}
+
+interface WhoToFollowCardProps {
+  users: FollowUser[];
+  loaded: boolean;
+  onPressProfile: (username: string) => void;
+  onFollow: (user: FollowUser) => Promise<boolean>;
+  onSeeMore: () => void;
+}
+
+function WhoToFollowCard({
+  users,
+  loaded,
+  onPressProfile,
+  onFollow,
+  onSeeMore,
+}: WhoToFollowCardProps) {
+  return (
+    <View style={railStyles.card}>
+      <Text style={railStyles.cardTitle}>Who to follow</Text>
+
+      {!loaded ? (
+        <View style={railStyles.placeholder}>
+          <ActivityIndicator color={colors.purpleLight} />
+        </View>
+      ) : users.length === 0 ? (
+        <Text style={railStyles.placeholderText}>No suggestions right now.</Text>
+      ) : (
+        <View>
+          {users.map((u, idx) => (
+            <View key={u.id}>
+              <SuggestionRow
+                user={u}
+                onPressProfile={() => {
+                  if (u.username) onPressProfile(u.username);
+                }}
+                onFollow={() => onFollow(u)}
+              />
+              {idx < users.length - 1 ? <View style={railStyles.divider} /> : null}
+            </View>
+          ))}
+        </View>
+      )}
+
+      <Pressable
+        onPress={onSeeMore}
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+          railStyles.seeMore,
+          (hovered as boolean) && railStyles.seeMoreHovered,
+          pressed && { opacity: 0.6 },
+        ]}
+      >
+        <Text style={railStyles.seeMoreText}>See more →</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main screen
 // ---------------------------------------------------------------------------
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isDesktop, isWide } = useResponsive();
+  const { showToast } = useToast();
+  const { width } = useResponsive();
+
+  // SSR-safe desktop detection — useWindowDimensions reports 0 during the
+  // expo-router static-export pass, so we re-read window.innerWidth post-mount
+  // to make the desktop column constraint reliable.
+  const [postMountWidth, setPostMountWidth] = useState(0);
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+    if (typeof window !== 'undefined') {
+      setPostMountWidth(window.innerWidth);
+      const onResize = () => setPostMountWidth(window.innerWidth);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }
+  }, []);
+  const effectiveWidth = hasMounted ? Math.max(postMountWidth, width) : 0;
+  const showDesktopColumn = hasMounted && effectiveWidth >= DESKTOP_MIN_WIDTH;
+  const showRail = hasMounted && effectiveWidth >= RAIL_MIN_WIDTH;
 
   const [username, setUsername] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -69,6 +237,28 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [endReached, setEndReached] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Right-rail state
+  const [suggested, setSuggested] = useState<FollowUser[]>([]);
+  const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
+
+  // Fetch suggestions only when the rail is visible.  Re-runs when the user
+  // resizes from narrow to wide so the rail populates on first reveal.
+  useEffect(() => {
+    if (!showRail) return;
+    if (suggestionsLoaded) return; // don't re-fetch on subsequent resizes
+    let cancelled = false;
+    getSuggestedUsers(SUGGESTION_LIMIT).then((users) => {
+      if (cancelled) return;
+      setSuggested(users);
+      setSuggestionsLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showRail, suggestionsLoaded]);
+
+  // ---- Feed loading (unchanged from prior pass) -----------------------------
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
@@ -143,6 +333,46 @@ export default function HomeScreen() {
     },
     [],
   );
+
+  // ---- Right-rail handlers --------------------------------------------------
+
+  /**
+   * Optimistically remove the user from the rail, then call followUser().
+   * On error, splice them back in at their original position and toast.
+   */
+  const handleFollowSuggestion = useCallback(
+    async (user: FollowUser): Promise<boolean> => {
+      let originalIndex = -1;
+      setSuggested((prev) => {
+        originalIndex = prev.findIndex((u) => u.id === user.id);
+        return prev.filter((u) => u.id !== user.id);
+      });
+      try {
+        await followUser(user.id);
+        return true;
+      } catch (err: any) {
+        // Revert
+        setSuggested((prev) => {
+          if (originalIndex < 0) return [user, ...prev];
+          const next = [...prev];
+          next.splice(Math.min(originalIndex, next.length), 0, user);
+          return next;
+        });
+        showToast(err?.message ?? 'Could not follow user', { tone: 'error' });
+        return false;
+      }
+    },
+    [showToast],
+  );
+
+  const handlePressSuggestionProfile = useCallback(
+    (uname: string) => {
+      router.push(`/profile/${uname}` as any);
+    },
+    [router],
+  );
+
+  // ---- Render bits ----------------------------------------------------------
 
   const renderHeader = () => (
     <View style={styles.greeting}>
@@ -261,7 +491,7 @@ export default function HomeScreen() {
       }
       ListFooterComponent={
         loadingMore ? (
-          <ActivityIndicator color="#A78BFA" style={styles.footerSpinner} />
+          <ActivityIndicator color={colors.purpleLight} style={styles.footerSpinner} />
         ) : feed.length > 0 && endReached ? (
           <Text style={styles.endLabel}>You're all caught up</Text>
         ) : null
@@ -270,8 +500,8 @@ export default function HomeScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor="#A78BFA"
-          colors={[PURPLE]}
+          tintColor={colors.purpleLight}
+          colors={[colors.purple]}
         />
       }
       onEndReached={onEndReached}
@@ -281,11 +511,32 @@ export default function HomeScreen() {
     />
   );
 
-  // ------------------------------------------------------------------
-  // Desktop: constrain the feed column and centre it.  On mobile/tablet
-  // render exactly as the native index.tsx does.
-  // ------------------------------------------------------------------
-  if (isDesktop || isWide) {
+  // -------------------------------------------------------------------
+  // Branch A — Wide desktop: feed + right rail
+  // -------------------------------------------------------------------
+  if (showRail) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.wideRow}>
+          <View style={styles.wideFeedCol}>{feedList}</View>
+          <View style={styles.railCol}>
+            <WhoToFollowCard
+              users={suggested}
+              loaded={suggestionsLoaded}
+              onPressProfile={handlePressSuggestionProfile}
+              onFollow={handleFollowSuggestion}
+              onSeeMore={() => router.push('/users/search' as any)}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // -------------------------------------------------------------------
+  // Branch B — Narrow desktop: centred feed, no rail
+  // -------------------------------------------------------------------
+  if (showDesktopColumn) {
     return (
       <View style={styles.container}>
         <View style={styles.desktopColumn}>
@@ -295,6 +546,9 @@ export default function HomeScreen() {
     );
   }
 
+  // -------------------------------------------------------------------
+  // Branch C — Mobile / tablet: identical to native index.tsx
+  // -------------------------------------------------------------------
   return <View style={styles.container}>{feedList}</View>;
 }
 
@@ -303,18 +557,39 @@ export default function HomeScreen() {
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: colors.bg },
 
   /**
-   * Desktop centred column.  640 px matches Twitter's content width and feels
-   * natural at 1024-1440 px viewport widths.  `alignSelf: 'center'` works
-   * correctly in react-native-web's flex layout.
+   * Narrow-desktop centred column (1024 ≤ w < 1280).  Single column max-width
+   * 640 px to remove dead horizontal space without committing to a rail.
    */
   desktopColumn: {
     flex: 1,
     width: '100%' as any,
     maxWidth: 640,
     alignSelf: 'center' as any,
+  },
+
+  /**
+   * Wide-desktop two-column container (w ≥ 1280).  Row of [feed | rail],
+   * constrained to 1200 px so the whole layout stays anchored even on 4K.
+   */
+  wideRow: {
+    flex: 1,
+    flexDirection: 'row',
+    width: '100%' as any,
+    maxWidth: 1200,
+    alignSelf: 'center' as any,
+    paddingHorizontal: spacing.lg,
+  },
+  wideFeedCol: {
+    flex: 1,
+    maxWidth: 640,
+  },
+  railCol: {
+    width: 320,
+    marginLeft: spacing.xl,
+    paddingTop: 40, // align with feed greeting block paddingTop
   },
 
   listContent: {
@@ -330,42 +605,137 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 16,
   },
-  greetingHello: { color: '#666', fontSize: 16 },
-  greetingName: { color: '#fff', fontSize: 26, fontWeight: 'bold' },
+  greetingHello: { color: colors.textMuted, fontSize: 16 },
+  greetingName: { color: colors.text, fontSize: 26, fontWeight: 'bold' },
 
   headerActions: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
   },
   bellButton: {
     width: 38, height: 38, borderRadius: 19,
-    backgroundColor: CARD, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border,
     position: 'relative',
   },
   bellBadge: {
     position: 'absolute', top: -2, right: -2,
     minWidth: 16, height: 16, borderRadius: 8,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.error,
     paddingHorizontal: 4,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: BG,
+    borderWidth: 1.5, borderColor: colors.bg,
   },
   bellBadgeText: {
     color: '#fff', fontSize: 9, fontWeight: '700',
   },
   composeButton: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
+    shadowColor: colors.purple, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4, shadowRadius: 8,
   },
 
   emptyWrap: { paddingTop: 40 },
   footerSpinner: { paddingVertical: 20 },
   endLabel: {
-    color: '#555',
+    color: colors.textPlaceholder,
     fontSize: 13,
     textAlign: 'center',
     paddingVertical: 24,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Right-rail styles — kept separate so the feed styles above stay readable
+// ---------------------------------------------------------------------------
+
+const railStyles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    // Sticks below the top of the viewport while the feed scrolls.  Cast to
+    // any because react-native-web supports `position: 'sticky'` but RN's
+    // type definitions don't include it.
+    position: 'sticky' as any,
+    top: spacing.xl,
+  },
+  cardTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+    gap: spacing.md,
+  },
+  rowHovered: {
+    backgroundColor: colors.cardElevated,
+  },
+  rowPressed: {
+    backgroundColor: colors.cardElevated,
+    opacity: 0.8,
+  },
+  rowText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  displayName: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  username: {
+    ...typography.small,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  bio: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  followWrap: {
+    justifyContent: 'center',
+    paddingTop: spacing.xs,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.xs,
+  },
+
+  placeholder: {
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+  },
+  placeholderText: {
+    ...typography.small,
+    color: colors.textMuted,
+    paddingVertical: spacing.lg,
+    textAlign: 'center',
+  },
+
+  seeMore: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignItems: 'flex-start',
+  },
+  seeMoreHovered: {
+    opacity: 0.85,
+  },
+  seeMoreText: {
+    ...typography.bodyBold,
+    color: colors.purpleLight,
   },
 });

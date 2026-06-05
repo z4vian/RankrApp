@@ -3,21 +3,34 @@
  *
  * Web-only tab layout.  Metro picks this file over _layout.tsx for web builds.
  *
- * - Desktop (≥ 1024 px):  persistent left sidebar (240 px) with vertical nav
- *   items, accent bar, hover/active states via Pressable's style callback.
- * - Mobile / tablet (< 1024 px): falls back to the same bottom-tab style as
- *   the native _layout.tsx so the mobile-web experience is unchanged.
+ * --------------------------------------------------------------------------
+ * Why this file does NOT use expo-router's <Tabs /> on desktop
+ * --------------------------------------------------------------------------
+ * Expo static export performs an SSR pass during `expo export -p web`.
+ * During that pass `useWindowDimensions()` returns `{ width: 0, height: 0 }`,
+ * so any branching that depends on viewport width evaluates the mobile path
+ * at build time and ships HTML containing the bottom-tab layout.  Worse,
+ * <Tabs /> appears to commit its tab-bar layout at first render and does not
+ * re-render cleanly when the dimensions hook updates post-hydration —
+ * meaning desktop users saw a mobile-shaped page even after JS booted.
  *
- * Keyboard shortcut: Cmd/Ctrl+K → /users/search  (desktop feel)
- *                    Escape      → router.back()
+ * Fix: on desktop, skip <Tabs /> entirely and render <Slot /> ourselves
+ * inside a custom shell with a sidebar.  <Slot /> renders whichever child
+ * route is currently active without locking in any tab-bar layout.
+ * On mobile/tablet we still use <Tabs /> so the bottom-bar experience is
+ * untouched.
+ *
+ * The `hasMounted` gate prevents a hydration mismatch / mobile-flash by
+ * rendering a null shell on the very first SSR render, then re-rendering
+ * with the real `window.innerWidth` post-mount.
  *
  * File ownership: web-dev  — do NOT edit _layout.tsx (native/frontend-dev).
  */
 
 import { useResponsive } from '@/lib/responsive';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Slot, Tabs, useRouter, useSegments } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -43,17 +56,19 @@ const INACTIVE_LABEL = '#666';
 // ---------------------------------------------------------------------------
 type NavItem = {
   name: string;
+  /** Path we push to when the item is tapped. */
+  href: string;
   title: string;
   iconFocused: React.ComponentProps<typeof Ionicons>['name'];
   iconDefault: React.ComponentProps<typeof Ionicons>['name'];
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { name: 'index',           title: 'Home',    iconFocused: 'home-sharp',    iconDefault: 'home-outline'    },
-  { name: 'lists',           title: 'Lists',   iconFocused: 'list',          iconDefault: 'list-outline'    },
-  { name: 'search',          title: 'Search',  iconFocused: 'search',        iconDefault: 'search-outline'  },
-  { name: 'recommendations', title: 'For You', iconFocused: 'star',          iconDefault: 'star-outline'    },
-  { name: 'profile',         title: 'Profile', iconFocused: 'person',        iconDefault: 'person-outline'  },
+  { name: 'index',           href: '/(tabs)',                 title: 'Home',    iconFocused: 'home-sharp', iconDefault: 'home-outline'   },
+  { name: 'lists',           href: '/(tabs)/lists',           title: 'Lists',   iconFocused: 'list',       iconDefault: 'list-outline'   },
+  { name: 'search',          href: '/(tabs)/search',          title: 'Search',  iconFocused: 'search',     iconDefault: 'search-outline' },
+  { name: 'recommendations', href: '/(tabs)/recommendations', title: 'For You', iconFocused: 'star',       iconDefault: 'star-outline'   },
+  { name: 'profile',         href: '/(tabs)/profile',         title: 'Profile', iconFocused: 'person',     iconDefault: 'person-outline' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -80,7 +95,6 @@ function SidebarItem({
       accessibilityRole="button"
       accessibilityLabel={item.title}
     >
-      {/* left accent bar — only visible when active */}
       <View style={[sidebarStyles.accentBar, focused && sidebarStyles.accentBarActive]} />
       <View style={[sidebarStyles.iconWrap, focused && sidebarStyles.iconWrapActive]}>
         <Ionicons
@@ -100,112 +114,191 @@ function SidebarItem({
 // Sidebar shell (desktop only)
 // ---------------------------------------------------------------------------
 function Sidebar({
-  state,
-  navigation,
+  activeName,
+  onNavigate,
 }: {
-  state: { index: number; routes: { name: string }[] };
-  navigation: { navigate: (name: string) => void };
+  activeName: string;
+  onNavigate: (item: NavItem) => void;
 }) {
   return (
     <View style={sidebarStyles.sidebar}>
-      {/* wordmark */}
       <View style={sidebarStyles.wordmark}>
         <Text style={sidebarStyles.wordmarkText}>Rankr</Text>
       </View>
 
-      {/* nav items */}
       <View style={sidebarStyles.navList}>
-        {NAV_ITEMS.map((item) => {
-          const routeIndex = state.routes.findIndex((r) => r.name === item.name);
-          const focused = routeIndex === state.index;
-          return (
-            <SidebarItem
-              key={item.name}
-              item={item}
-              focused={focused}
-              onPress={() => navigation.navigate(item.name)}
-            />
-          );
-        })}
+        {NAV_ITEMS.map((item) => (
+          <SidebarItem
+            key={item.name}
+            item={item}
+            focused={activeName === item.name}
+            onPress={() => onNavigate(item)}
+          />
+        ))}
       </View>
 
-      {/* bottom hint */}
       <View style={sidebarStyles.shortcutHint}>
         <Ionicons name="search-outline" size={12} color="#555" />
-        <Text style={sidebarStyles.shortcutText}>⌘K to search</Text>
+        <Text style={sidebarStyles.shortcutText}>Cmd/Ctrl+K to search</Text>
       </View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Custom tabBar — switches between sidebar (desktop) and bottom bar (mobile)
+// Mobile tab bar (mirrors _layout.tsx visually — used for < 1024 px)
 // ---------------------------------------------------------------------------
-function CustomTabBar(props: any) {
-  const { isDesktop, isWide } = useResponsive();
-  const showSidebar = isDesktop || isWide;
-
-  if (showSidebar) {
-    return <Sidebar state={props.state} navigation={props.navigation} />;
-  }
-
-  // ---- Mobile / tablet bottom tab bar (mirrors _layout.tsx styling) ----
-  const { state, descriptors, navigation } = props;
+function MobileTabs() {
   return (
-    <View style={bottomStyles.tabBar}>
-      {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
-        const focused = state.index === index;
-
-        // Grab the nav item definition so we can render icons consistently
-        const navItem = NAV_ITEMS.find((n) => n.name === route.name);
-        if (!navItem) return null; // hide hidden routes (profile-settings)
-
-        const isSearch = route.name === 'search';
-
-        return (
-          <Pressable
-            key={route.key}
-            onPress={() => navigation.navigate(route.name)}
-            style={({ pressed }: { pressed: boolean }) => [
-              bottomStyles.tabItem,
-              pressed && { opacity: 0.7 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={navItem.title}
-          >
-            {isSearch ? (
-              <View style={[bottomStyles.searchWrapper, focused && bottomStyles.searchActive]}>
-                <Ionicons name="search" size={22} color={focused ? '#fff' : INACTIVE} />
-              </View>
-            ) : (
-              <View style={[bottomStyles.iconWrapper, focused && bottomStyles.activeWrapper]}>
-                <Ionicons
-                  name={focused ? navItem.iconFocused : navItem.iconDefault}
-                  size={22}
-                  color={focused ? PURPLE : INACTIVE}
-                />
-              </View>
-            )}
-            {!isSearch && (
-              <Text style={[bottomStyles.label, focused && bottomStyles.labelActive]}>
-                {navItem.title}
-              </Text>
-            )}
-          </Pressable>
-        );
-      })}
-    </View>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: TAB_BG,
+          borderTopColor: '#1e1e2a',
+          borderTopWidth: 1,
+          height: Platform.OS === 'ios' ? 88 : 70,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingTop: 10,
+          elevation: 0,
+        },
+        tabBarActiveTintColor: PURPLE,
+        tabBarInactiveTintColor: INACTIVE,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 2,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[mobileStyles.iconWrapper, focused && mobileStyles.activeWrapper]}>
+              <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={22} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="lists"
+        options={{
+          title: 'Lists',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[mobileStyles.iconWrapper, focused && mobileStyles.activeWrapper]}>
+              <Ionicons name={focused ? 'list' : 'list-outline'} color={color} size={22} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ focused }) => (
+            <View style={[mobileStyles.searchWrapper, focused && mobileStyles.searchActive]}>
+              <Ionicons name="search" color={focused ? '#fff' : INACTIVE} size={22} />
+            </View>
+          ),
+          tabBarLabelStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="recommendations"
+        options={{
+          title: 'For You',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[mobileStyles.iconWrapper, focused && mobileStyles.activeWrapper]}>
+              <Ionicons name={focused ? 'star' : 'star-outline'} color={color} size={22} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[mobileStyles.iconWrapper, focused && mobileStyles.activeWrapper]}>
+              <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={22} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen name="profile-settings" options={{ href: null }} />
+    </Tabs>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Root layout component
+// Root component
 // ---------------------------------------------------------------------------
+
+/**
+ * Resolve the currently active tab name from the segment array.
+ * Segments look like ['(tabs)'] for / or ['(tabs)', 'lists'] for /lists.
+ */
+function activeTabFromSegments(segments: string[]): string {
+  // First segment after '(tabs)' (if any) is the tab name.  No second segment
+  // means we're on the index tab.
+  const tabsIndex = segments.indexOf('(tabs)');
+  const next = tabsIndex >= 0 ? segments[tabsIndex + 1] : undefined;
+  return next ?? 'index';
+}
+
 export default function TabLayoutWeb() {
   const router = useRouter();
-  const { isDesktop, isWide } = useResponsive();
-  const showSidebar = isDesktop || isWide;
+  const segments = useSegments() as string[];
+  const { width, isDesktop, isWide } = useResponsive();
+
+  // -------------------------------------------------------------------
+  // Hydration gate
+  //
+  // During SSR `useWindowDimensions()` returns { width: 0 }.  Rendering the
+  // mobile branch at build time and the desktop branch post-hydration causes
+  // React to either flash the mobile layout or — worse, with reactCompiler
+  // enabled — keep the SSR tree because React thinks nothing changed.
+  //
+  // Solution: don't decide which branch to render until after mount.  We
+  // also read `window.innerWidth` directly here because useResponsive() may
+  // still return a stale value during the first useEffect tick on some
+  // browsers.
+  // -------------------------------------------------------------------
+  const [hasMounted, setHasMounted] = useState(false);
+  const [postMountWidth, setPostMountWidth] = useState(0);
+
+  useEffect(() => {
+    setHasMounted(true);
+    if (typeof window !== 'undefined') {
+      setPostMountWidth(window.innerWidth);
+      const onResize = () => setPostMountWidth(window.innerWidth);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }
+  }, []);
+
+  // Use the most reliable signal we have for "desktop".
+  const effectiveWidth = hasMounted ? Math.max(postMountWidth, width) : 0;
+  const showSidebar = hasMounted && effectiveWidth >= 1024;
+
+  // Diagnostic — surfaces in the browser console so we can verify behaviour
+  // on the deployed Vercel site.
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // eslint-disable-next-line no-console
+      console.log('[layout]', {
+        hasMounted,
+        width,
+        postMountWidth,
+        effectiveWidth,
+        isDesktop,
+        isWide,
+        showSidebar,
+      });
+    }
+  }, [hasMounted, width, postMountWidth, effectiveWidth, isDesktop, isWide, showSidebar]);
 
   // Keyboard shortcuts — web only
   useEffect(() => {
@@ -223,26 +316,40 @@ export default function TabLayoutWeb() {
     return () => window.removeEventListener('keydown', handler);
   }, [router]);
 
-  return (
-    <View style={[shellStyles.root, showSidebar && shellStyles.rootDesktop]}>
-      <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-          // Hide the default tab bar completely — CustomTabBar renders it
-          tabBarStyle: { display: 'none' },
-        }}
-      >
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="lists" options={{ title: 'Lists' }} />
-        <Tabs.Screen name="search" options={{ title: 'Search' }} />
-        <Tabs.Screen name="recommendations" options={{ title: 'For You' }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-        {/* Hide extra screens from the tab bar */}
-        <Tabs.Screen name="profile-settings" options={{ href: null }} />
-      </Tabs>
-    </View>
-  );
+  // -------------------------------------------------------------------
+  // Branch 1 — SSR / first render before mount.  Render a minimal shell
+  // that matches the eventual mobile tree shape so hydration succeeds
+  // without warnings, then immediately re-render once hasMounted flips.
+  // -------------------------------------------------------------------
+  if (!hasMounted) {
+    return <MobileTabs />;
+  }
+
+  // -------------------------------------------------------------------
+  // Branch 2 — Desktop: bypass <Tabs /> entirely.  Render a sidebar +
+  // <Slot /> for the active route.  This avoids the issue where the
+  // <Tabs /> bottom-bar layout was being committed at SSR time and
+  // refusing to give way after hydration.
+  // -------------------------------------------------------------------
+  if (showSidebar) {
+    const activeName = activeTabFromSegments(segments);
+    return (
+      <View style={shellStyles.desktopShell}>
+        <Sidebar
+          activeName={activeName}
+          onNavigate={(item) => router.push(item.href as any)}
+        />
+        <View style={shellStyles.contentColumn}>
+          <Slot />
+        </View>
+      </View>
+    );
+  }
+
+  // -------------------------------------------------------------------
+  // Branch 3 — Mobile / tablet: keep the original bottom-tab layout.
+  // -------------------------------------------------------------------
+  return <MobileTabs />;
 }
 
 // ---------------------------------------------------------------------------
@@ -250,12 +357,15 @@ export default function TabLayoutWeb() {
 // ---------------------------------------------------------------------------
 
 const shellStyles = StyleSheet.create({
-  root: {
+  desktopShell: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#0f0f13',
+    minHeight: '100%' as any,
+  },
+  contentColumn: {
     flex: 1,
     backgroundColor: '#0f0f13',
-  },
-  rootDesktop: {
-    flexDirection: 'row',
   },
 });
 
@@ -268,8 +378,6 @@ const sidebarStyles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 24,
     flexDirection: 'column',
-    // sticky on web via position fixed equivalent (react-native-web honours this)
-    // We rely on the parent flex row — sidebar stays in place naturally.
   },
 
   wordmark: {
@@ -355,23 +463,7 @@ const sidebarStyles = StyleSheet.create({
   },
 });
 
-const bottomStyles = StyleSheet.create({
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: TAB_BG,
-    borderTopColor: '#1e1e2a',
-    borderTopWidth: 1,
-    height: 70,
-    paddingBottom: 12,
-    paddingTop: 10,
-    alignItems: 'center',
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
+const mobileStyles = StyleSheet.create({
   iconWrapper: {
     width: 36,
     height: 36,
@@ -400,13 +492,5 @@ const bottomStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
-  },
-  label: {
-    color: INACTIVE_LABEL,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  labelActive: {
-    color: PURPLE,
   },
 });

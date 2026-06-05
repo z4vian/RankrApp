@@ -81,9 +81,20 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading) return;
     const inAuthGroup = segments[0] === '(auth)';
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login' as any);
-    } else if (session && inAuthGroup) {
+    const inLandingGroup = segments[0] === 'landing';
+
+    if (!session && !inAuthGroup && !inLandingGroup) {
+      // Web users see a public Letterboxd-style landing page before being
+      // pushed into auth. Native users go straight to login as before — no
+      // landing flash on app open.
+      if (Platform.OS === 'web') {
+        router.replace('/landing' as any);
+      } else {
+        router.replace('/(auth)/login' as any);
+      }
+    } else if (session && (inAuthGroup || inLandingGroup)) {
+      // Signed-in users should never see the unauth surfaces. Covers the case
+      // where a web user manually navigates to /landing after logging in.
       router.replace('/(tabs)' as any);
     }
   }, [session, loading]);
@@ -110,6 +121,7 @@ export default function RootLayout() {
             <Stack.Screen name="post" />
             <Stack.Screen name="year-in-review" />
             <Stack.Screen name="profile-delete" />
+            <Stack.Screen name="landing" />
           </Stack>
         </ToastProvider>
       </ListProvider>

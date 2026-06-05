@@ -291,3 +291,114 @@ export async function getFollowCounts(
     return { followers: 0, following: 0 };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Suggested users ("Who to follow" widget)
+// ---------------------------------------------------------------------------
+
+/**
+ * Suggest public profiles for the current user to follow.
+ *
+ * V1 algorithm: pull a wider window of eligible public profiles (excluding
+ * the current user and anyone they already follow), then return a random
+ * subset of size `limit`. The randomization is intentional — it makes the
+ * widget feel fresh between renders without needing per-user activity data.
+ *
+ * Excluded:
+ *   - The current user themselves.
+ *   - Users the current user already follows.
+ *   - Profiles without a username (legacy / un-onboarded rows — they have
+ *     no stable handle to navigate to).
+ *
+ * Future iterations could rank by mutual-follow count, taste similarity, or
+ * activity recency. For v1, simple wins.
+ *
+ * Returns up to `limit` profiles (default 5). Degrades to empty array on any
+ * error (no session, query failure, etc.) — the widget should render empty
+ * rather than break the page.
+ *
+ * Schema note:
+ *   `profiles` has no `created_at` column in this project (verified against
+ *   `docs/database-schema.md`). Ordering by UUID `id` ASC would be stable
+ *   but boring — the same N users would dominate forever — so we over-fetch
+ *   a larger candidate window and shuffle client-side instead.
+ */
+export async function getSuggestedUsers(limit: number = 5): Promise<FollowUser[]> {
+  try {
+    const { data: userResult, error: authError } = await supabase.auth.getUser();
+    if (authError || !userResult.user) return [];
+    const me = userResult.user.id;
+
+    // Step 1: collect the user IDs the current user already follows.
+    const { data: followsData, error: followsErr } = await supabase
+      .from('follows')
+      .select('followed_id')
+      .eq('follower_id', me);
+
+    if (followsErr) {
+      console.error('[getSuggestedUsers] follows', followsErr.message);
+      // Don't bail — degrade by treating the exclude-set as just {me}.
+    }
+
+    const excludeIds = new Set<string>([me]);
+    for (const row of followsData ?? []) {
+      const id = (row as { followed_id?: unknown }).followed_id;
+      if (typeof id === 'string') excludeIds.add(id);
+    }
+
+    // Step 2: pull a candidate window of public profiles.
+    //
+    // Over-fetch by ~5x the requested limit so the random-shuffle (step 3)
+    // can vary outputs across calls. Hard cap at 100 to keep the round-trip
+    // small. PostgREST's `.not('id', 'in', '(uuid,uuid,...)')` syntax takes
+    // a paren-wrapped comma-separated list; we build that string explicitly.
+    const candidateLimit = Math.min(100, Math.max(limit, limit * 5));
+    let q = supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url, bio')
+      .eq('is_public', true)
+      .not('username', 'is', null)
+      .limit(candidateLimit);
+
+    // PostgREST `not.in` requires `(a,b,c)` — empty `()` is a syntax error,
+    // so only attach the filter when there's at least one ID to exclude.
+    if (excludeIds.size > 0) {
+      const formatted = `(${Array.from(excludeIds).join(',')})`;
+      q = q.not('id', 'in', formatted);
+    }
+
+    const { data, error } = await q;
+
+    if (error) {
+      console.error('[getSuggestedUsers]', error.message);
+      return [];
+    }
+    if (!data || data.length === 0) return [];
+
+    // Step 3: shuffle and slice. Fisher–Yates so the distribution is uniform
+    // and we don't depend on Math.random() bias in any one slot.
+    const pool: FollowUser[] = [];
+    for (const row of data) {
+      const id = (row as { id?: unknown }).id;
+      const username = (row as { username?: unknown }).username;
+      if (typeof id !== 'string' || typeof username !== 'string') continue;
+      pool.push({
+        id,
+        username,
+        display_name: ((row as { display_name?: unknown }).display_name as string | null) ?? null,
+        avatar_url: ((row as { avatar_url?: unknown }).avatar_url as string | null) ?? null,
+        bio: ((row as { bio?: unknown }).bio as string | null) ?? null,
+      });
+    }
+
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    return pool.slice(0, limit);
+  } catch (err) {
+    console.error('[getSuggestedUsers] unexpected', err);
+    return [];
+  }
+}

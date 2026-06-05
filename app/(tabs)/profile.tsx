@@ -1,3 +1,5 @@
+import { useToast } from '@/components';
+import { getFollowCounts } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -21,6 +23,8 @@ type ProfileStats = {
   likedCount: number;
   didntCareCount: number;
   didntLikeCount: number;
+  followersCount: number;
+  followingCount: number;
   topList: { title: string; category: string; count: number } | null;
 };
 
@@ -40,6 +44,7 @@ const scoreColor = (score: number) => {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
@@ -63,9 +68,15 @@ export default function ProfileScreen() {
 
     if (!lists) { setLoading(false); return; }
 
-    const { data: items } = await supabase
-      .from('list_items')
-      .select('rank, sentiment, list_id');
+    // Run follow-count fetch in parallel with list_items fetch — both depend
+    // only on the resolved user.id.
+    const [itemsRes, follow] = await Promise.all([
+      supabase.from('list_items').select('rank, sentiment, list_id'),
+      user?.id
+        ? getFollowCounts(user.id)
+        : Promise.resolve({ followers: 0, following: 0 }),
+    ]);
+    const items = itemsRes.data;
 
     const allItems = items ?? [];
     const ranked = allItems.filter(i => i.rank !== null);
@@ -86,9 +97,28 @@ export default function ProfileScreen() {
       likedCount: allItems.filter(i => i.sentiment === 'liked').length,
       didntCareCount: allItems.filter(i => i.sentiment === 'didnt_care').length,
       didntLikeCount: allItems.filter(i => i.sentiment === 'didnt_like').length,
+      followersCount: follow.followers,
+      followingCount: follow.following,
       topList: listCounts[0] ?? null,
     });
     setLoading(false);
+  };
+
+  /**
+   * Route to the follow-list screen if the user has a username; otherwise
+   * tell them they need to set one. Legacy accounts created before username
+   * was required may have null usernames and no public-profile URL to
+   * navigate to.
+   */
+  const handleFollowListPress = (which: 'followers' | 'following') => {
+    if (!profile?.username) {
+      showToast(
+        'Set a username in profile settings to enable this.',
+        { tone: 'info' },
+      );
+      return;
+    }
+    router.push(`/profile/${profile.username}/${which}` as any);
   };
 
   useFocusEffect(useCallback(() => { fetchProfile(); }, []));
@@ -179,6 +209,29 @@ export default function ProfileScreen() {
               </Text>
               <Text style={styles.statLabel}>Avg Score</Text>
             </View>
+          </View>
+
+          {/* Followers / Following — tappable, navigate to the public-profile
+              followers/following screens. Falls back to a toast when the
+              account has no username yet. */}
+          <View style={styles.statsRow}>
+            <TouchableOpacity
+              style={styles.statBox}
+              onPress={() => handleFollowListPress('followers')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.statValue}>{stats?.followersCount ?? 0}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </TouchableOpacity>
+            <View style={styles.statDivider} />
+            <TouchableOpacity
+              style={styles.statBox}
+              onPress={() => handleFollowListPress('following')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.statValue}>{stats?.followingCount ?? 0}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.section}>
