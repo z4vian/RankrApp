@@ -33,3 +33,17 @@ export const RAWG_API_KEY = requireKey(
   'EXPO_PUBLIC_RAWG_API_KEY',
   process.env.EXPO_PUBLIC_RAWG_API_KEY
 );
+
+/**
+ * Google Books API key. Optional — Google Books DOES accept anonymous requests,
+ * but the keyless quota is shared across every IP making anonymous calls and
+ * gets exhausted quickly on Vercel/cloud deployments. Setting a key raises the
+ * free quota to 1,000 requests/day per project, which is plenty for v1.
+ *
+ * Get a key at https://console.cloud.google.com/apis/credentials → Create
+ * credentials → API key, then enable the Books API in the API library.
+ */
+export const GOOGLE_BOOKS_API_KEY = requireKey(
+  'EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY',
+  process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY
+);

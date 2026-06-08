@@ -4,9 +4,12 @@
  * Phase 5 — books search. Same flow as movies/games/music/tv:
  *   search → sentiment → pick list → notes/photos → comparison sheet.
  *
- * Data source: Google Books API (keyless).
+ * Data source: Google Books API. Anonymous quota is tight (~100/day shared
+ * across IPs), so we append a project API key when GOOGLE_BOOKS_API_KEY is
+ * set. Without the key, requests still go through but will 429 quickly.
  */
 
+import { GOOGLE_BOOKS_API_KEY } from '@/lib/apiKeys';
 import ComparisonSheet, { RankedItem } from '@/lib/ComparisonSheet';
 import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
@@ -114,7 +117,8 @@ export default function BooksSearch() {
       // results (he's an author, not a title). A plain `q=` accepts both
       // title and author tokens. We additionally fall back to a wider search
       // (no field qualifier) if the first call somehow returns no items.
-      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=20&printType=books`;
+      const keyParam = GOOGLE_BOOKS_API_KEY ? `&key=${GOOGLE_BOOKS_API_KEY}` : '';
+      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=20&printType=books${keyParam}`;
       const response = await fetch(url);
       const data = await response.json();
       const items = Array.isArray(data?.items) ? data.items : [];
