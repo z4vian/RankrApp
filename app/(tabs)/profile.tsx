@@ -62,19 +62,26 @@ export default function ProfileScreen() {
       .single();
     setProfile(profileData);
 
+    // SECURITY: must scope to the current user. Without this filter, public
+    // lists owned by OTHER users would leak in here (RLS allows reading any
+    // visibility='public' list — see docs/PHASE-1-MIGRATION.sql §4).
+    if (!user?.id) { setLoading(false); return; }
     const { data: lists } = await supabase
       .from('lists')
-      .select('id, title, category');
+      .select('id, title, category')
+      .eq('user_id', user.id);
 
     if (!lists) { setLoading(false); return; }
 
-    // Run follow-count fetch in parallel with list_items fetch — both depend
-    // only on the resolved user.id.
+    // Run follow-count fetch in parallel with list_items fetch — both scoped
+    // to the current user. The list_items query uses an inner join on lists
+    // so we can filter on the parent list's owner.
     const [itemsRes, follow] = await Promise.all([
-      supabase.from('list_items').select('rank, sentiment, list_id'),
-      user?.id
-        ? getFollowCounts(user.id)
-        : Promise.resolve({ followers: 0, following: 0 }),
+      supabase
+        .from('list_items')
+        .select('rank, sentiment, list_id, lists!inner(user_id)')
+        .eq('lists.user_id', user.id),
+      getFollowCounts(user.id),
     ]);
     const items = itemsRes.data;
 

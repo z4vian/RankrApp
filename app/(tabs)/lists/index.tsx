@@ -31,9 +31,15 @@ export default function ListsScreen() {
 
   const fetchLists = async () => {
     setLoading(true);
+    // SECURITY: scope to the current user. Without this filter, public lists
+    // owned by OTHER users would leak in here (RLS allows reading any
+    // visibility='public' list — see docs/PHASE-1-MIGRATION.sql §4).
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) { setLists([]); setLoading(false); return; }
     const { data, error } = await supabase
       .from('lists')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (!error && data) {

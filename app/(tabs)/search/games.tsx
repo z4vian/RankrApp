@@ -131,10 +131,14 @@ export default function GamesSearch() {
     setPhotos([]);
     setSaveError('');
     setNewItemId(null);
+    // SECURITY: scope the list picker to the current user — without this
+    // filter, public lists from OTHER users would appear here.
+    const { data: { user: pickerUser } } = await supabase.auth.getUser();
     const { data } = await supabase
       .from('lists')
       .select('id, title, category')
-      .eq('category', item.category);
+      .eq('category', item.category)
+      .eq('user_id', pickerUser?.id ?? '00000000-0000-0000-0000-000000000000');
     setUserLists(data ?? []);
     bottomSheetRef.current?.expand();
   };
