@@ -493,3 +493,192 @@ export async function fetchListItemWithOwner(itemId: string): Promise<ListItemDe
     created_at: data.created_at as string,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Public-list browse (Phase 7) — used by the discover screen
+// ---------------------------------------------------------------------------
+
+/**
+ * One row in the discover-screen feed: a public list with its owner profile
+ * and item count attached.
+ *
+ * `category` is `string` rather than `RecCategory` because legacy DB rows
+ * may carry unexpected values (matches the loosening done on
+ * `ListItemDetail.category`).
+ */
+export type PublicListSummary = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  item_count: number;
+  owner: {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  created_at: string;
+};
+
+/**
+ * Browse public lists across the platform. Used by the discover screen.
+ *
+ * Sort: by `item_count` DESC, then by `created_at` DESC. Lists with more
+ * ranked items appear first; ties are broken by recency.
+ *
+ * Implementation note:
+ *   This is a THREE-QUERY pattern, not a one-shot nested-select. Reason:
+ *   `lists.user_id` has a direct FK to `auth.users(id)` but NOT to
+ *   `profiles(id)` — the Phase-2 hotfix added direct profile FKs for posts,
+ *   comments, likes, watched_with, and follows, but deliberately skipped
+ *   `lists` (see `docs/HOTFIX-1-PROFILE-FKS.sql`). Without that FK,
+ *   PostgREST can't auto-embed `lists → profiles`. The three-query approach
+ *   is mechanical and works regardless of which FKs exist.
+ *
+ *   Query 1: fetch up to `limit` public lists matching the category filter,
+ *            sorted by created_at DESC.
+ *   Query 2: aggregate item counts via PostgREST's group-by on a `count`
+ *            select, scoped to those list ids.
+ *   Query 3: fetch the owner profiles in one `in('id', ...)` query.
+ *
+ * Empty / failed queries degrade independently:
+ *   - missing item-count → 0 (the list still renders, just with "0 items").
+ *   - missing owner profile → empty owner fields (the list still renders).
+ *
+ * @param category  Optional category filter ('movies' | 'tv' | 'games' |
+ *                  'music' | 'books'; any string accepted at the type level).
+ * @param limit     Max rows to return. Default 30.
+ *
+ * Returns [] on a hard error (auth absent — not required here, since public
+ * lists are anon-readable — or the lists query itself failing).
+ */
+export async function fetchPublicLists(
+  category?: string,
+  limit: number = 30
+): Promise<PublicListSummary[]> {
+  try {
+    // ---- Query 1: public lists, optionally filtered by category ------------
+    let listsQuery = supabase
+      .from('lists')
+      .select('id, user_id, title, description, category, created_at')
+      .eq('visibility', 'public')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (category) {
+      listsQuery = listsQuery.eq('category', category);
+    }
+
+    const { data: listsData, error: listsError } = await listsQuery;
+
+    if (listsError) {
+      console.error('[fetchPublicLists] lists', listsError.message);
+      return [];
+    }
+    if (!listsData || listsData.length === 0) return [];
+
+    // Collect ids for the next two queries.
+    const listIds: string[] = [];
+    const ownerIds = new Set<string>();
+    for (const row of listsData) {
+      const id = (row as { id?: unknown }).id;
+      const userId = (row as { user_id?: unknown }).user_id;
+      if (typeof id === 'string') listIds.push(id);
+      if (typeof userId === 'string') ownerIds.add(userId);
+    }
+
+    // ---- Queries 2 + 3: item counts and owner profiles in parallel ---------
+    const [countsRes, ownersRes] = await Promise.all([
+      // Item-count per list. We fetch (list_id) rows in batch and count
+      // client-side rather than relying on PostgREST GROUP BY (which it
+      // doesn't expose) or N parallel head-counts (which is wasteful for
+      // >5 lists). Cap the row fetch at a large but bounded number so a
+      // pathological list with millions of items doesn't bloat the response.
+      supabase
+        .from('list_items')
+        .select('list_id')
+        .in('list_id', listIds)
+        .limit(100000),
+      supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', Array.from(ownerIds)),
+    ]);
+
+    if (countsRes.error) {
+      console.error('[fetchPublicLists] counts', countsRes.error.message);
+    }
+    if (ownersRes.error) {
+      console.error('[fetchPublicLists] owners', ownersRes.error.message);
+    }
+
+    // Aggregate counts by list_id.
+    const itemCount = new Map<string, number>();
+    for (const row of countsRes.data ?? []) {
+      const lid = (row as { list_id?: unknown }).list_id;
+      if (typeof lid !== 'string') continue;
+      itemCount.set(lid, (itemCount.get(lid) ?? 0) + 1);
+    }
+
+    // Index owner profiles by id.
+    type OwnerRow = {
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      avatar_url: string | null;
+    };
+    const ownerMap = new Map<string, OwnerRow>();
+    for (const raw of ownersRes.data ?? []) {
+      const o = raw as Record<string, unknown>;
+      const id = o.id;
+      if (typeof id !== 'string') continue;
+      ownerMap.set(id, {
+        id,
+        username: (o.username as string | null) ?? null,
+        display_name: (o.display_name as string | null) ?? null,
+        avatar_url: (o.avatar_url as string | null) ?? null,
+      });
+    }
+
+    // ---- Zip ---------------------------------------------------------------
+    const out: PublicListSummary[] = [];
+    for (const raw of listsData) {
+      const r = raw as Record<string, unknown>;
+      const id = r.id;
+      const userId = r.user_id;
+      if (typeof id !== 'string' || typeof userId !== 'string') continue;
+
+      const owner = ownerMap.get(userId) ?? {
+        id: userId,
+        username: null,
+        display_name: null,
+        avatar_url: null,
+      };
+
+      out.push({
+        id,
+        title: typeof r.title === 'string' ? r.title : '',
+        description: (r.description as string | null) ?? null,
+        category: typeof r.category === 'string' ? r.category : '',
+        item_count: itemCount.get(id) ?? 0,
+        owner,
+        created_at: typeof r.created_at === 'string' ? r.created_at : '',
+      });
+    }
+
+    // Sort: item_count DESC, then created_at DESC (tiebreaker).
+    out.sort((a, b) => {
+      if (b.item_count !== a.item_count) return b.item_count - a.item_count;
+      // ISO 8601 strings sort lexicographically the same as chronologically.
+      return b.created_at.localeCompare(a.created_at);
+    });
+
+    // Final cap (defensive — listsData was already limited, but explicit
+    // limit here matches the documented contract).
+    return out.slice(0, limit);
+  } catch (err) {
+    console.error('[fetchPublicLists] unexpected', err);
+    return [];
+  }
+}

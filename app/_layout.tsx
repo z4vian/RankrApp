@@ -21,6 +21,7 @@
 
 import { ToastProvider } from '@/components';
 import { ListProvider } from '@/lib/ListContext';
+import { isOnboardingComplete } from '@/lib/onboarding';
 import { registerPushToken } from '@/lib/pushTokens';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -65,6 +66,11 @@ async function setupPush(): Promise<void> {
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  // Phase 7: tri-state onboarding flag.
+  //   null    — not yet resolved for the current session
+  //   true    — user has completed onboarding (or is a back-compat pre-Phase-7 user)
+  //   false   — needs to be routed to /(onboarding)/create-profile
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const router = useRouter();
   const segments = useSegments() as string[];
 
@@ -75,13 +81,42 @@ export default function RootLayout() {
     });
     supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      // Reset the onboarding flag on auth changes so we re-check for the new
+      // user. The next effect re-resolves it.
+      setOnboardingDone(null);
     });
   }, []);
+
+  // Resolve onboarding status whenever a session appears. Runs once per
+  // session — onboardingDone moves null → boolean and stays there until the
+  // next sign-in/out.
+  useEffect(() => {
+    if (!session) {
+      setOnboardingDone(null);
+      return;
+    }
+    if (onboardingDone !== null) return;
+    let cancelled = false;
+    isOnboardingComplete()
+      .then((done) => {
+        if (!cancelled) setOnboardingDone(done);
+      })
+      .catch(() => {
+        // Defensive: treat as done to avoid trapping the user. The
+        // back-compat path inside lib/onboarding already treats non-null
+        // usernames as onboarded.
+        if (!cancelled) setOnboardingDone(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, onboardingDone]);
 
   useEffect(() => {
     if (loading) return;
     const inAuthGroup = segments[0] === '(auth)';
     const inLandingGroup = segments[0] === 'landing';
+    const inOnboardingGroup = segments[0] === '(onboarding)';
 
     if (!session && !inAuthGroup && !inLandingGroup) {
       // Web users see a public Letterboxd-style landing page before being
@@ -92,12 +127,30 @@ export default function RootLayout() {
       } else {
         router.replace('/(auth)/login' as any);
       }
-    } else if (session && (inAuthGroup || inLandingGroup)) {
+      return;
+    }
+
+    if (session && (inAuthGroup || inLandingGroup)) {
       // Signed-in users should never see the unauth surfaces. Covers the case
       // where a web user manually navigates to /landing after logging in.
       router.replace('/(tabs)' as any);
+      return;
     }
-  }, [session, loading]);
+
+    // Phase 7 — onboarding gate. Only applies once the session is present
+    // AND we've resolved the onboarding flag. While resolving (null) we let
+    // the user stay wherever they are to avoid a flash.
+    if (session && onboardingDone === false && !inOnboardingGroup) {
+      router.replace('/(onboarding)/create-profile' as any);
+      return;
+    }
+
+    // Don't let a finished user re-enter onboarding by URL.
+    if (session && onboardingDone === true && inOnboardingGroup) {
+      router.replace('/(tabs)' as any);
+      return;
+    }
+  }, [session, loading, onboardingDone, segments]);
 
   // Phase 5 — set up push when the session becomes available.
   useEffect(() => {
@@ -113,6 +166,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="item" />
             <Stack.Screen name="profile" />
             <Stack.Screen name="users" />
@@ -122,6 +176,7 @@ export default function RootLayout() {
             <Stack.Screen name="year-in-review" />
             <Stack.Screen name="profile-delete" />
             <Stack.Screen name="landing" />
+            <Stack.Screen name="discover" />
           </Stack>
         </ToastProvider>
       </ListProvider>

@@ -355,6 +355,50 @@ export default function ListItemDetailScreen() {
               <Ionicons name="share-outline" size={16} color={colors.text} />
               <Text style={styles.ownerBarBtnLabel}>Share</Text>
             </TouchableOpacity>
+            {/* Phase 7 — Re-rank. Nulls out the current rank and routes to
+                the category's search screen with ?relistItemId=, which the
+                search screen catches on mount and pushes the item back into
+                the comparison flow. */}
+            <TouchableOpacity
+              style={styles.ownerBarBtn}
+              onPress={() =>
+                Alert.alert(
+                  'Re-rank this item?',
+                  'The current score will be replaced once you compare it again.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Re-rank',
+                      onPress: async () => {
+                        const { error } = await supabase
+                          .from('list_items')
+                          .update({ rank: null })
+                          .eq('id', detail.id);
+                        if (error) {
+                          showToast(error.message, { tone: 'error' });
+                          return;
+                        }
+                        // Route to the category's search screen with the
+                        // re-rank payload. Categories that aren't one of the
+                        // five mapped screens fall back to movies; this
+                        // shouldn't happen in practice but it's safer than a
+                        // 404.
+                        const cat = ['movies', 'tv', 'games', 'music', 'books'].includes(detail.category)
+                          ? detail.category
+                          : 'movies';
+                        router.replace(
+                          `/(tabs)/search/${cat}?relistItemId=${detail.id}` as any,
+                        );
+                      },
+                    },
+                  ],
+                )
+              }
+              activeOpacity={0.7}
+            >
+              <Ionicons name="repeat-outline" size={16} color={colors.text} />
+              <Text style={styles.ownerBarBtnLabel}>Re-rank</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.ownerBarBtn}
               onPress={() =>
@@ -710,6 +754,7 @@ const styles = StyleSheet.create({
   // Owner action bar
   ownerBar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,

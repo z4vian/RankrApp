@@ -289,3 +289,217 @@ export async function getYearInsights(year?: number): Promise<YearInsights> {
     return emptyInsights(year ?? new Date().getUTCFullYear());
   }
 }
+
+// ===========================================================================
+// Overlap / taste-similarity with another user (Phase 7)
+// ===========================================================================
+
+/**
+ * A single item that BOTH the current user and another user have ranked.
+ * `rank_diff` is the absolute difference between the two ranks — smaller
+ * means more agreement.
+ */
+export type OverlapItem = {
+  external_id: string;
+  title: string;
+  image_url: string | null;
+  /** Typically one of RecCategory ('movies'|'games'|'music'|'tv'|'books'). */
+  category: string;
+  /** My rank (1–10 range, may slightly exceed bounds per the ranking algo). */
+  my_rank: number;
+  /** Their rank (1–10 range, same caveat). */
+  their_rank: number;
+  /** |my_rank - their_rank|. Always ≥ 0. */
+  rank_diff: number;
+};
+
+/**
+ * Result of `getOverlapWithUser`.
+ *
+ * `similarity_score`:
+ *   - When `shared_items` is non-empty, it's `round((1 - mean(diff/9)) * 100)`
+ *     where each `diff` is `rank_diff` clamped to [0, 9]. The /9 normalizer
+ *     comes from the 1..10 rank range (max possible diff is 9). Perfect
+ *     agreement = 100, max disagreement = 0.
+ *   - When `shared_items` is empty, it's `0`. The UI should distinguish
+ *     "no shared items" from "we disagree on everything" via
+ *     `shared_items.length === 0`.
+ */
+export type UserOverlap = {
+  other_user_id: string;
+  /** Sorted by rank_diff ASC (most-agreed-on first). */
+  shared_items: OverlapItem[];
+  /** Integer 0–100. */
+  similarity_score: number;
+  /** Total count of my ranked items (any category, any visibility I can see). */
+  total_my_ranked: number;
+  /** Total count of their ranked items (RLS-filtered — public lists only). */
+  total_their_ranked: number;
+};
+
+/**
+ * Internal: a row from the ranked-items query used by `getOverlapWithUser`.
+ * Same shape for both "me" and "them" fetches.
+ */
+type RankedRow = {
+  external_id: string;
+  title: string;
+  image_url: string | null;
+  category: string;
+  rank: number;
+};
+
+/**
+ * Fetch a user's ranked items (rank IS NOT NULL, parent list owned by them).
+ * Filters out rows with missing external_id / category / rank since they can't
+ * participate in an overlap join. Returns at most `cap` rows.
+ *
+ * RLS filters automatically: for `targetUserId === currentUser`, we see
+ * everything (RLS lets owners read their own private lists); for any other
+ * `targetUserId`, only items on public lists come back.
+ */
+async function fetchRankedItemsForUser(
+  targetUserId: string,
+  cap: number = 5000
+): Promise<RankedRow[]> {
+  const { data, error } = await supabase
+    .from('list_items')
+    .select(`
+      external_id, title, image_url, category, rank,
+      lists!inner ( user_id )
+    `)
+    .eq('lists.user_id', targetUserId)
+    .not('rank', 'is', null)
+    .limit(cap);
+
+  if (error) {
+    console.error('[getOverlapWithUser] ranked fetch', targetUserId, error.message);
+    return [];
+  }
+  if (!data) return [];
+
+  const out: RankedRow[] = [];
+  for (const raw of data) {
+    const row = raw as Record<string, unknown>;
+    const externalId = row.external_id;
+    const title = row.title;
+    const category = row.category;
+    const rank = row.rank;
+    // external_id and category form the join key; both must be present.
+    if (typeof externalId !== 'string' || externalId.length === 0) continue;
+    if (typeof category !== 'string' || category.length === 0) continue;
+    if (typeof rank !== 'number' || !Number.isFinite(rank)) continue;
+    out.push({
+      external_id: externalId,
+      title: typeof title === 'string' ? title : '',
+      image_url: (row.image_url as string | null) ?? null,
+      category,
+      rank,
+    });
+  }
+  return out;
+}
+
+/**
+ * Build the join key for two items being "the same item" across users.
+ * We compose external_id + category so that, hypothetically, a TMDB movie id
+ * "3498" and a RAWG game id "3498" don't accidentally collide. (In practice
+ * the prefixes differ across our APIs, but this guard is free and correct.)
+ */
+function overlapKey(externalId: string, category: string): string {
+  return `${category} ${externalId}`;
+}
+
+/**
+ * Compute the overlap and taste-similarity between the current user and
+ * another. See `UserOverlap` for the result shape and the `similarity_score`
+ * formula.
+ *
+ * Returns `null` when:
+ *   - there's no session,
+ *   - `otherUserId` equals the current user's id (overlap with self is not
+ *     meaningful),
+ *   - `otherUserId` is empty/falsy.
+ *
+ * On per-query errors, still returns a `UserOverlap` with whatever data we
+ * could collect (degraded gracefully). The two underlying queries run in
+ * parallel.
+ *
+ * @param otherUserId  Supabase user id of the other user.
+ */
+export async function getOverlapWithUser(otherUserId: string): Promise<UserOverlap | null> {
+  if (!otherUserId || typeof otherUserId !== 'string') return null;
+
+  try {
+    const { data: userResult, error: authError } = await supabase.auth.getUser();
+    if (authError || !userResult.user) return null;
+    const me = userResult.user.id;
+
+    if (otherUserId === me) return null;
+
+    const [mine, theirs] = await Promise.all([
+      fetchRankedItemsForUser(me),
+      fetchRankedItemsForUser(otherUserId),
+    ]);
+
+    // Build the lookup table from MY items so we can join in O(N) over theirs.
+    const myMap = new Map<string, RankedRow>();
+    for (const r of mine) {
+      myMap.set(overlapKey(r.external_id, r.category), r);
+    }
+
+    const shared: OverlapItem[] = [];
+    for (const t of theirs) {
+      const m = myMap.get(overlapKey(t.external_id, t.category));
+      if (!m) continue;
+      const diff = Math.abs(m.rank - t.rank);
+      shared.push({
+        external_id: t.external_id,
+        // Prefer my title/image (UI is rendered from my perspective). Fall
+        // back to theirs only if mine is empty.
+        title: m.title || t.title || '',
+        image_url: m.image_url ?? t.image_url ?? null,
+        category: t.category,
+        my_rank: m.rank,
+        their_rank: t.rank,
+        rank_diff: diff,
+      });
+    }
+
+    // Sort: most-agreed-on first. Stable secondary sort on title so the
+    // ordering is deterministic for testing.
+    shared.sort((a, b) => {
+      if (a.rank_diff !== b.rank_diff) return a.rank_diff - b.rank_diff;
+      return a.title.localeCompare(b.title);
+    });
+
+    // Similarity score: 100 = perfect agreement, 0 = max disagreement.
+    // Diff is clamped to [0, 9] so an out-of-range rank (the ranking
+    // algorithm can push a few tenths above 10 or below 1 — see
+    // database-schema.md notes) doesn't drag the score negative.
+    let similarityScore = 0;
+    if (shared.length > 0) {
+      let totalNormalized = 0;
+      for (const s of shared) {
+        const clamped = Math.max(0, Math.min(9, s.rank_diff));
+        totalNormalized += clamped / 9;
+      }
+      const meanNormalized = totalNormalized / shared.length;
+      similarityScore = Math.round((1 - meanNormalized) * 100);
+      // Defensive clamp in case of floating-point drift on the edges.
+      if (similarityScore < 0) similarityScore = 0;
+      if (similarityScore > 100) similarityScore = 100;
+    }
+
+    return {
+      other_user_id: otherUserId,
+      shared_items: shared,
+      similarity_score: similarityScore,
+      total_my_ranked: mine.length,
+      total_their_ranked: theirs.length,
+    };
+  } catch (err) {
+    console.error('[getOverlapWithUser] unexpected', otherUserId, err);
+    return null;
+  }
+}

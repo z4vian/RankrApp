@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Image, Platform, ScrollView,
@@ -49,6 +50,12 @@ const sentimentRange = (s: Sentiment) => {
 };
 
 export default function MoviesSearch() {
+  // Phase 7 — when entering with ?relistItemId=, we auto-open the sentiment
+  // sheet with that item pre-filled. The Re-rank button on the list-item
+  // detail screen nulls the existing rank and routes here.
+  const { relistItemId } = useLocalSearchParams<{ relistItemId?: string }>();
+  const relistFired = useRef(false);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,6 +88,32 @@ export default function MoviesSearch() {
     debounceTimer.current = setTimeout(() => searchMovies(query), 500);
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [query]);
+
+  // Phase 7 re-rank handler: when ?relistItemId= is present, fetch the row
+  // and open the sentiment sheet pre-filled. Runs once per mount via the
+  // relistFired ref.
+  useEffect(() => {
+    if (!relistItemId || relistFired.current) return;
+    relistFired.current = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('list_items')
+        .select('title, subtitle, image_url, external_id, category')
+        .eq('id', relistItemId)
+        .maybeSingle();
+      if (error || !data) return;
+      // Skip if this item belongs to a different category screen (shouldn't
+      // happen given the routing logic, but defensive).
+      if (data.category !== 'movies') return;
+      openSheet({
+        title: (data.title as string) ?? '',
+        subtitle: (data.subtitle as string | null) ?? '',
+        image_url: (data.image_url as string | null) ?? '',
+        external_id: (data.external_id as string | null) ?? '',
+        category: 'movies',
+      });
+    })();
+  }, [relistItemId]);
 
   const searchMovies = async (searchQuery: string) => {
     setLoading(true);

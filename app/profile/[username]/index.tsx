@@ -212,6 +212,22 @@ export default function PublicProfileScreen() {
           }
         />
 
+        {/* Phase 7 — Compare button. Sits directly under ProfileHeader (which
+            renders the Follow button inside it), so visually it's adjacent to
+            Follow. Only shown for other users. */}
+        {!isSelf ? (
+          <View style={styles.compareActionRow}>
+            <TouchableOpacity
+              style={styles.compareBtn}
+              onPress={() => router.push(`/profile/${profile.username}/compare` as any)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="git-compare-outline" size={16} color={colors.purpleLight} />
+              <Text style={styles.compareBtnText}>Compare with me</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* Public Lists section */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>PUBLIC LISTS</Text>
@@ -409,4 +425,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
+
+  // Phase 7 — Compare button (sits below ProfileHeader)
+  compareActionRow: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
+  compareBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.purpleSoft,
+    borderWidth: 1, borderColor: colors.purple,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+  },
+  compareBtnText: { ...typography.bodyBold, color: colors.purpleLight },
 });

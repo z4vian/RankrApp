@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Image, Platform, ScrollView,
@@ -48,6 +49,10 @@ const sentimentRange = (s: Sentiment) => {
 };
 
 export default function MusicSearch() {
+  // Phase 7 — see movies.tsx for the re-rank flow rationale.
+  const { relistItemId } = useLocalSearchParams<{ relistItemId?: string }>();
+  const relistFired = useRef(false);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,6 +84,28 @@ export default function MusicSearch() {
     debounceTimer.current = setTimeout(() => searchTracks(query), 500);
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [query]);
+
+  // Phase 7 re-rank handler — see movies.tsx for full notes.
+  useEffect(() => {
+    if (!relistItemId || relistFired.current) return;
+    relistFired.current = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('list_items')
+        .select('title, subtitle, image_url, external_id, category')
+        .eq('id', relistItemId)
+        .maybeSingle();
+      if (error || !data) return;
+      if (data.category !== 'music') return;
+      openSheet({
+        title: (data.title as string) ?? '',
+        subtitle: (data.subtitle as string | null) ?? '',
+        image_url: (data.image_url as string | null) ?? '',
+        external_id: (data.external_id as string | null) ?? '',
+        category: 'music',
+      });
+    })();
+  }, [relistItemId]);
 
   const searchTracks = async (searchQuery: string) => {
     setLoading(true);

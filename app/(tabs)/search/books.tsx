@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Image, Platform, ScrollView,
@@ -67,6 +68,10 @@ const upgradeThumb = (url: string | undefined): string => {
 };
 
 export default function BooksSearch() {
+  // Phase 7 — see movies.tsx for the re-rank flow rationale.
+  const { relistItemId } = useLocalSearchParams<{ relistItemId?: string }>();
+  const relistFired = useRef(false);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
