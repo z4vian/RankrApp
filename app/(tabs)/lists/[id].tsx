@@ -1,3 +1,4 @@
+import { useToast } from '@/components';
 import { useActiveList } from '@/lib/ListContext';
 import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
@@ -50,17 +51,38 @@ const sentimentColor = (s: string | null) => {
 
 type Visibility = 'public' | 'private';
 
+// Phase 7 — categories accepted by the edit-list sheet. Matches lists/create.tsx.
+type Category = 'movies' | 'tv' | 'games' | 'music' | 'books';
+const CATEGORIES: { key: Category; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'movies', label: 'Movies', icon: 'film-outline' },
+  { key: 'tv', label: 'TV', icon: 'tv-outline' },
+  { key: 'games', label: 'Games', icon: 'game-controller-outline' },
+  { key: 'music', label: 'Music', icon: 'musical-notes-outline' },
+  { key: 'books', label: 'Books', icon: 'book-outline' },
+];
+
 export default function ListDetail() {
   const { id, title, description } = useLocalSearchParams<{
     id: string; title: string; description: string;
   }>();
   const router = useRouter();
+  const { showToast } = useToast();
   const { setActiveList } = useActiveList();
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'rankings' | 'saved'>('rankings');
   const [visibility, setVisibility] = useState<Visibility>('private');
   const [visibilityUpdating, setVisibilityUpdating] = useState(false);
+
+  // Phase 7 — list metadata (loaded by fetchListMeta) + ownership check.
+  // Initial display title / description come from useLocalSearchParams but
+  // we mirror them into state so an edit can update the screen without a
+  // full route round-trip.
+  const [listTitle, setListTitle] = useState<string>((title as string) ?? '');
+  const [listDescription, setListDescription] = useState<string>((description as string) ?? '');
+  const [listCategory, setListCategory] = useState<Category>('movies');
+  const [listOwnerId, setListOwnerId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['70%', '95%'], []);
@@ -69,6 +91,18 @@ export default function ListDetail() {
   const [editPhotos, setEditPhotos] = useState<string[]>([]);
   const [editSentiment, setEditSentiment] = useState<Sentiment | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Phase 7 — separate bottom sheet for the list-metadata edit flow. Kept
+  // separate from the existing item-edit sheet so the two flows can't
+  // collide and the legacy item-edit path stays untouched.
+  const listEditSheetRef = useRef<BottomSheet>(null);
+  const listEditSnapPoints = useMemo(() => ['65%', '90%'], []);
+  const [listEditOpen, setListEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState<Category>('movies');
+  const [editVisibility, setEditVisibility] = useState<Visibility>('private');
+  const [listSaving, setListSaving] = useState(false);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -82,17 +116,29 @@ export default function ListDetail() {
   };
 
   const fetchListMeta = async () => {
-    // Pull the parent list's visibility flag. If the column doesn't exist
-    // (DB not migrated yet), default to 'private' silently.
+    // Phase 7 — pull the full editable metadata, not just visibility. We use
+    // these to gate the Edit button (owner-only) and pre-fill the edit sheet.
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id ?? null);
+
     const { data, error } = await supabase
       .from('lists')
-      .select('visibility')
+      .select('user_id, title, description, category, visibility')
       .eq('id', id)
       .maybeSingle();
-    if (!error && data && (data as { visibility?: string }).visibility) {
-      const v = (data as { visibility?: string }).visibility;
-      if (v === 'public' || v === 'private') setVisibility(v);
+    if (error || !data) return;
+
+    setListOwnerId((data.user_id as string | null) ?? null);
+    const t = (data.title as string | null) ?? '';
+    const d = (data.description as string | null) ?? '';
+    const c = (data.category as string | null) ?? 'movies';
+    if (t) setListTitle(t);
+    setListDescription(d);
+    if (c === 'movies' || c === 'tv' || c === 'games' || c === 'music' || c === 'books') {
+      setListCategory(c);
     }
+    const v = (data.visibility as string | null) ?? null;
+    if (v === 'public' || v === 'private') setVisibility(v);
   };
 
   const toggleVisibility = async () => {
@@ -126,6 +172,76 @@ export default function ListDetail() {
     setActiveList({ id: id as string, title: title as string, category: '' });
     return () => setActiveList(null);
   }, [id, title]));
+
+  // Phase 7 — list-edit sheet handlers
+  const openListEditSheet = () => {
+    setEditTitle(listTitle);
+    setEditDescription(listDescription);
+    setEditCategory(listCategory);
+    setEditVisibility(visibility);
+    setListEditOpen(true);
+    listEditSheetRef.current?.expand();
+  };
+
+  const closeListEditSheet = () => {
+    setListEditOpen(false);
+    listEditSheetRef.current?.close();
+  };
+
+  const handleSaveListMeta = async () => {
+    const trimmedTitle = editTitle.trim();
+    const trimmedDesc = editDescription.trim();
+    if (trimmedTitle.length === 0) {
+      showToast('Title is required.', { tone: 'error' });
+      return;
+    }
+    if (trimmedTitle.length > 80) {
+      showToast('Title must be 80 characters or fewer.', { tone: 'error' });
+      return;
+    }
+    if (trimmedDesc.length > 280) {
+      showToast('Description must be 280 characters or fewer.', { tone: 'error' });
+      return;
+    }
+
+    // Optimistic local state — snapshot for rollback on failure.
+    const prev = {
+      title: listTitle,
+      description: listDescription,
+      category: listCategory,
+      visibility,
+    };
+    setListTitle(trimmedTitle);
+    setListDescription(trimmedDesc);
+    setListCategory(editCategory);
+    setVisibility(editVisibility);
+
+    setListSaving(true);
+    const { error } = await supabase
+      .from('lists')
+      .update({
+        title: trimmedTitle,
+        description: trimmedDesc,
+        category: editCategory,
+        visibility: editVisibility,
+      })
+      .eq('id', id);
+    setListSaving(false);
+
+    if (error) {
+      // Revert optimistic update.
+      setListTitle(prev.title);
+      setListDescription(prev.description);
+      setListCategory(prev.category);
+      setVisibility(prev.visibility);
+      showToast(error.message || 'Could not save changes.', { tone: 'error' });
+      return;
+    }
+
+    showToast('List updated', { tone: 'success' });
+    setListEditOpen(false);
+    listEditSheetRef.current?.close();
+  };
 
   const bookmarkedItems = items.filter(i => i.bookmarked);
   const rankableItems = items.filter(i => !i.bookmarked);
@@ -360,33 +476,48 @@ export default function ListDetail() {
                     </TouchableOpacity>
                   </View>
                   <View style={styles.coverTitleArea}>
-                    <Text style={styles.coverTitle}>{title}</Text>
-                    {description ? (
-                      <Text style={styles.coverDesc}>{description}</Text>
+                    <Text style={styles.coverTitle}>{listTitle || title}</Text>
+                    {listDescription ? (
+                      <Text style={styles.coverDesc}>{listDescription}</Text>
                     ) : null}
-                    <TouchableOpacity
-                      style={[
-                        styles.visibilityPill,
-                        visibility === 'public' && styles.visibilityPillPublic,
-                      ]}
-                      onPress={toggleVisibility}
-                      activeOpacity={0.8}
-                      disabled={visibilityUpdating}
-                    >
-                      <Ionicons
-                        name={visibility === 'public' ? 'globe-outline' : 'lock-closed'}
-                        size={12}
-                        color={visibility === 'public' ? '#fff' : '#bbb'}
-                      />
-                      <Text
+                    <View style={styles.coverPillRow}>
+                      <TouchableOpacity
                         style={[
-                          styles.visibilityPillText,
-                          visibility === 'public' && styles.visibilityPillTextPublic,
+                          styles.visibilityPill,
+                          visibility === 'public' && styles.visibilityPillPublic,
                         ]}
+                        onPress={toggleVisibility}
+                        activeOpacity={0.8}
+                        disabled={visibilityUpdating}
                       >
-                        {visibility === 'public' ? 'Public' : 'Private'}
-                      </Text>
-                    </TouchableOpacity>
+                        <Ionicons
+                          name={visibility === 'public' ? 'globe-outline' : 'lock-closed'}
+                          size={12}
+                          color={visibility === 'public' ? '#fff' : '#bbb'}
+                        />
+                        <Text
+                          style={[
+                            styles.visibilityPillText,
+                            visibility === 'public' && styles.visibilityPillTextPublic,
+                          ]}
+                        >
+                          {visibility === 'public' ? 'Public' : 'Private'}
+                        </Text>
+                      </TouchableOpacity>
+                      {/* Phase 7 — Edit list. Owner-only, sits next to the
+                          visibility pill. Falsey listOwnerId means we
+                          haven't loaded metadata yet; hide until we know. */}
+                      {listOwnerId && currentUserId && listOwnerId === currentUserId ? (
+                        <TouchableOpacity
+                          style={styles.editListPill}
+                          onPress={openListEditSheet}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="pencil-outline" size={12} color="#bbb" />
+                          <Text style={styles.editListPillText}>Edit list</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
 
@@ -618,6 +749,159 @@ export default function ListDetail() {
           )}
         </BottomSheetScrollView>
       </BottomSheet>
+
+      {/* ---- Phase 7: Edit-list-metadata bottom sheet ---- */}
+      <BottomSheet
+        ref={listEditSheetRef}
+        index={-1}
+        snapPoints={listEditSnapPoints}
+        enablePanDownToClose
+        onClose={() => setListEditOpen(false)}
+        backgroundStyle={styles.sheetBg}
+        handleIndicatorStyle={{ backgroundColor: '#444' }}
+      >
+        <BottomSheetScrollView
+          contentContainerStyle={styles.sheetContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {listEditOpen && (
+            <>
+              <View style={styles.listEditHeader}>
+                <Text style={styles.listEditTitle}>Edit list</Text>
+                <TouchableOpacity onPress={closeListEditSheet} hitSlop={8}>
+                  <Ionicons name="close" size={22} color="#888" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.sectionLabel}>Title</Text>
+              <TextInput
+                style={styles.listEditInput}
+                placeholder="My favourite movies"
+                placeholderTextColor="#555"
+                value={editTitle}
+                onChangeText={setEditTitle}
+                maxLength={80}
+              />
+              <Text style={styles.fieldHint}>{editTitle.length}/80</Text>
+
+              <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Description</Text>
+              <TextInput
+                style={[styles.listEditInput, styles.listEditTextarea]}
+                placeholder="A short description (optional)"
+                placeholderTextColor="#555"
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+                numberOfLines={3}
+                maxLength={280}
+              />
+              <Text style={styles.fieldHint}>{editDescription.length}/280</Text>
+
+              <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Category</Text>
+              {items.length > 0 ? (
+                <Text style={styles.fieldHint}>
+                  Can&apos;t change category once items are added (would invalidate rankings)
+                </Text>
+              ) : null}
+              <View
+                style={[
+                  styles.catGrid,
+                  // Visually disable + block touches when the list has items.
+                  items.length > 0 && styles.catGridLocked,
+                ]}
+                pointerEvents={items.length > 0 ? 'none' : 'auto'}
+              >
+                {CATEGORIES.map((cat) => {
+                  const active = editCategory === cat.key;
+                  return (
+                    <TouchableOpacity
+                      key={cat.key}
+                      style={[
+                        styles.catBtn,
+                        active && styles.catBtnActive,
+                      ]}
+                      onPress={() => setEditCategory(cat.key)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons
+                        name={cat.icon}
+                        size={18}
+                        color={active ? '#fff' : '#aaa'}
+                      />
+                      <Text style={[styles.catBtnText, active && styles.catBtnTextActive]}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Who can see this list?</Text>
+              <View style={styles.visRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.visPill,
+                    editVisibility === 'private' && styles.visPillActive,
+                  ]}
+                  onPress={() => setEditVisibility('private')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons
+                    name="lock-closed"
+                    size={16}
+                    color={editVisibility === 'private' ? '#fff' : '#888'}
+                  />
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={[styles.visTitle, editVisibility === 'private' && styles.visTitleActive]}>
+                      Private
+                    </Text>
+                    <Text style={[styles.visSubtitle, editVisibility === 'private' && styles.visSubtitleActive]}>
+                      Only you
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.visPill,
+                    editVisibility === 'public' && styles.visPillActive,
+                  ]}
+                  onPress={() => setEditVisibility('public')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons
+                    name="globe-outline"
+                    size={16}
+                    color={editVisibility === 'public' ? '#fff' : '#888'}
+                  />
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={[styles.visTitle, editVisibility === 'public' && styles.visTitleActive]}>
+                      Public
+                    </Text>
+                    <Text style={[styles.visSubtitle, editVisibility === 'public' && styles.visSubtitleActive]}>
+                      Anyone can view
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.saveBtn, listSaving && { opacity: 0.6 }]}
+                onPress={handleSaveListMeta}
+                disabled={listSaving}
+              >
+                {listSaving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeListEditSheet}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
     </View>
   );
 }
@@ -783,4 +1067,66 @@ const styles = StyleSheet.create({
   moveToRankingsText: { color: PURPLE_LIGHT, fontSize: 14, fontWeight: '600' },
   removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 14 },
   removeBtnText: { color: '#ef4444', fontSize: 14 },
+
+  // ---- Phase 7: list-edit pill in cover ----
+  coverPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  editListPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: BORDER,
+  },
+  editListPillText: { color: '#bbb', fontSize: 11, fontWeight: '600' },
+
+  // ---- Phase 7: list-edit sheet ----
+  listEditHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  listEditTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  listEditInput: {
+    backgroundColor: CARD, color: '#fff', borderRadius: 10,
+    padding: 14, fontSize: 15,
+    borderWidth: 1, borderColor: BORDER,
+  },
+  listEditTextarea: { height: 90, textAlignVertical: 'top' },
+  fieldHint: { color: '#666', fontSize: 11, marginTop: 4 },
+  // Category grid (5 chips, wrap to 2 rows on narrow widths)
+  catGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8,
+  },
+  catGridLocked: {
+    opacity: 0.4,
+  },
+  catBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: CARD, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, gap: 6,
+    borderWidth: 1, borderColor: BORDER,
+    flexGrow: 1, flexBasis: 88,
+  },
+  catBtnActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  catBtnText: { color: '#aaa', fontSize: 13 },
+  catBtnTextActive: { color: '#fff', fontWeight: '600' },
+  // Visibility row
+  visRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  visPill: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: CARD, borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: BORDER,
+  },
+  visPillActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  visTitle: { color: '#ddd', fontSize: 14, fontWeight: '600' },
+  visTitleActive: { color: '#fff' },
+  visSubtitle: { color: '#666', fontSize: 11, marginTop: 1 },
+  visSubtitleActive: { color: PURPLE_LIGHT },
+  cancelBtn: { alignItems: 'center', padding: 14, marginTop: 4 },
+  cancelBtnText: { color: '#888', fontSize: 14 },
 });
