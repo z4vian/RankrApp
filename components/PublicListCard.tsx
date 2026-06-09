@@ -67,8 +67,10 @@ export function PublicListCard({
           <TouchableOpacity
             onPress={onOwnerPress}
             activeOpacity={0.7}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={styles.ownerTap}
+            accessibilityRole="link"
+            accessibilityLabel={`Open profile of ${ownerLabel}`}
           >
             <Avatar uri={owner.avatar_url} name={ownerLabel} size={24} />
             <Text style={styles.ownerHandle} numberOfLines={1}>{ownerHandle}</Text>

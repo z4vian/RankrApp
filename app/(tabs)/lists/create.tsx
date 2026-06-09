@@ -1,5 +1,6 @@
 import { useToast } from '@/components';
 import { supabase } from '@/lib/supabase';
+import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,12 +9,6 @@ import {
     TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 // Phase 5: extend to 5 categories. `lists.category` is text with no DB CHECK,
 // so adding new values requires no SQL change.
@@ -94,7 +89,9 @@ export default function CreateList() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backBtn}
-          hitSlop={8}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -209,16 +206,16 @@ export default function CreateList() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1, backgroundColor: colors.bg },
   headerBar: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: BORDER,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
     gap: 12,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
     justifyContent: 'center', alignItems: 'center',
   },
   headerTitle: { flex: 1, color: '#fff', fontSize: 18, fontWeight: '700' },
@@ -226,18 +223,18 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
   label: { color: '#aaa', fontSize: 13, marginBottom: 6, marginTop: 16 },
-  input: { backgroundColor: CARD, color: '#fff', borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 4, borderWidth: 1, borderColor: BORDER },
+  input: { backgroundColor: colors.card, color: '#fff', borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 4, borderWidth: 1, borderColor: colors.border },
   textArea: { height: 90, textAlignVertical: 'top' },
   // 5 pills — allow wrapping to a second row on narrow screens.
   categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   categoryButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: CARD, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, gap: 6,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, gap: 6,
+    borderWidth: 1, borderColor: colors.border,
     // Grow to fill row but keep a sane minimum so labels never clip.
     flexGrow: 1, flexBasis: 88,
   },
-  categoryButtonActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  categoryButtonActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   categoryText: { color: '#aaa', fontSize: 13 },
   categoryTextActive: { color: '#fff', fontWeight: '600' },
 
@@ -245,17 +242,17 @@ const styles = StyleSheet.create({
   visibilityRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   visibilityPill: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: CARD, borderRadius: 10, padding: 12,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: colors.border,
   },
-  visibilityPillActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  visibilityPillActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   visibilityTextWrap: { flexShrink: 1 },
   visibilityTitle: { color: '#ddd', fontSize: 14, fontWeight: '600' },
   visibilityTitleActive: { color: '#fff' },
   visibilitySubtitle: { color: '#666', fontSize: 11, marginTop: 1 },
-  visibilitySubtitleActive: { color: PURPLE_LIGHT },
+  visibilitySubtitleActive: { color: colors.purpleLight },
 
-  button: { backgroundColor: PURPLE, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 24 },
+  button: { backgroundColor: colors.purple, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 24 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   error: { color: '#ef4444', marginBottom: 12, textAlign: 'center' },
 });

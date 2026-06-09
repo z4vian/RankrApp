@@ -1,10 +1,7 @@
+import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
-
-const PURPLE = '#7C3AED';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
 
 function BackButton() {
   const router = useRouter();
@@ -27,7 +24,7 @@ export default function SearchLayout() {
         options={{
           title: 'Movies',
           headerLeft: () => <BackButton />,
-          headerStyle: { backgroundColor: BG },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerShadowVisible: false,
@@ -38,7 +35,7 @@ export default function SearchLayout() {
         options={{
           title: 'Music',
           headerLeft: () => <BackButton />,
-          headerStyle: { backgroundColor: BG },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerShadowVisible: false,
@@ -49,7 +46,7 @@ export default function SearchLayout() {
         options={{
           title: 'Video Games',
           headerLeft: () => <BackButton />,
-          headerStyle: { backgroundColor: BG },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerShadowVisible: false,
@@ -60,7 +57,7 @@ export default function SearchLayout() {
         options={{
           title: 'Books',
           headerLeft: () => <BackButton />,
-          headerStyle: { backgroundColor: BG },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerShadowVisible: false,
@@ -71,7 +68,7 @@ export default function SearchLayout() {
         options={{
           title: 'TV Shows',
           headerLeft: () => <BackButton />,
-          headerStyle: { backgroundColor: BG },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerShadowVisible: false,
@@ -82,7 +79,7 @@ export default function SearchLayout() {
         options={{
           title: 'Add to List',
           headerLeft: () => <BackButton />,
-          headerStyle: { backgroundColor: BG },
+          headerStyle: { backgroundColor: colors.bg },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
           headerShadowVisible: false,

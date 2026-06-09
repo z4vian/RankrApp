@@ -21,7 +21,8 @@ import { getFeed, type FeedItem } from '@/lib/feed';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 import { deletePost } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
-import { EmptyState, LoadingState, PostCard, RankedItemCard } from '@/components';
+import { colors, glow } from '@/lib/theme';
+import { EmptyState, PostCard, PostCardSkeleton, RankedItemCard } from '@/components';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -36,10 +37,6 @@ import {
   View,
 } from 'react-native';
 
-const PURPLE = '#7C3AED';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 const PAGE_SIZE = 30;
 
 /**
@@ -156,7 +153,9 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.bellButton}
           onPress={() => router.push('/notifications' as any)}
-          hitSlop={6}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         >
           <Ionicons name="notifications-outline" size={20} color="#aaa" />
           {unreadCount > 0 ? (
@@ -252,7 +251,11 @@ export default function HomeScreen() {
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           loading ? (
-            <LoadingState label="Loading your feed…" />
+            <View>
+              <PostCardSkeleton />
+              <PostCardSkeleton />
+              <PostCardSkeleton />
+            </View>
           ) : (
             <View style={styles.emptyWrap}>
               <EmptyState
@@ -280,7 +283,7 @@ export default function HomeScreen() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor="#A78BFA"
-            colors={[PURPLE]}
+            colors={[colors.purple]}
           />
         }
         onEndReached={onEndReached}
@@ -293,7 +296,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: colors.bg },
 
   listContent: {
     paddingBottom: 100,
@@ -316,8 +319,8 @@ const styles = StyleSheet.create({
   },
   bellButton: {
     width: 38, height: 38, borderRadius: 19,
-    backgroundColor: CARD, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border,
     position: 'relative',
   },
   bellBadge: {
@@ -326,16 +329,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
     paddingHorizontal: 4,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: BG,
+    borderWidth: 1.5, borderColor: colors.bg,
   },
   bellBadgeText: {
     color: '#fff', fontSize: 9, fontWeight: '700',
   },
   composeButton: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
+    ...glow.purpleStrong,
   },
 
   // Feed states

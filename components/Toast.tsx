@@ -8,6 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { useReducedMotion } from '@/lib/a11y';
 import { colors, radius, shadow, spacing, typography } from '@/lib/theme';
 
 export type ToastTone = 'success' | 'error' | 'info';
@@ -27,10 +28,16 @@ const TONE_DOT: Record<ToastTone, string> = {
 
 /** Single toast pill — colored leading dot + message; spring-in on mount, dismissable on tap. */
 export function Toast({ message, tone = 'info', onDismiss, style }: ToastProps) {
-  const translateY = useRef(new Animated.Value(20)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const reducedMotion = useReducedMotion();
+  const translateY = useRef(new Animated.Value(reducedMotion ? 0 : 20)).current;
+  const opacity = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
 
   useEffect(() => {
+    if (reducedMotion) {
+      translateY.setValue(0);
+      opacity.setValue(1);
+      return;
+    }
     Animated.parallel([
       Animated.spring(translateY, {
         toValue: 0,
@@ -44,7 +51,7 @@ export function Toast({ message, tone = 'info', onDismiss, style }: ToastProps) 
         useNativeDriver: true,
       }),
     ]).start();
-  }, [translateY, opacity]);
+  }, [translateY, opacity, reducedMotion]);
 
   const content = (
     <Animated.View
@@ -66,12 +73,24 @@ export function Toast({ message, tone = 'info', onDismiss, style }: ToastProps) 
         onPress={onDismiss}
         activeOpacity={0.85}
         style={styles.touchable}
+        accessibilityRole="button"
+        accessibilityLabel={`${tone === 'error' ? 'Error' : tone === 'success' ? 'Success' : 'Notification'}: ${message}`}
+        accessibilityHint="Tap to dismiss"
+        accessibilityLiveRegion="polite"
       >
         {content}
       </TouchableOpacity>
     );
   }
-  return <View style={styles.touchable}>{content}</View>;
+  return (
+    <View
+      style={styles.touchable}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+    >
+      {content}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

@@ -75,6 +75,9 @@ export function CommentInput({
             disabled={!canSend}
             activeOpacity={0.7}
             style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
+            accessibilityRole="button"
+            accessibilityLabel="Send comment"
+            accessibilityState={{ disabled: !canSend, busy: submitting }}
           >
             {submitting ? (
               <ActivityIndicator color={colors.text} size="small" />

@@ -1,6 +1,7 @@
 import { useToast } from '@/components';
 import { getFollowCounts } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
+import { colors, glow, scoreColor } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -8,12 +9,6 @@ import {
   ActivityIndicator, Image, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
-
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 type ProfileStats = {
   totalLists: number;
@@ -33,13 +28,6 @@ type Profile = {
   username: string | null;
   bio: string | null;
   avatar_url: string | null;
-};
-
-const scoreColor = (score: number) => {
-  if (score >= 8) return '#22c55e';
-  if (score >= 6) return '#eab308';
-  if (score >= 4) return '#f97316';
-  return '#ef4444';
 };
 
 export default function ProfileScreen() {
@@ -152,7 +140,9 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={() => router.push('/users/search' as any)}
             style={styles.findFriendsPill}
-            hitSlop={6}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Find friends"
           >
             <Ionicons name="person-add-outline" size={14} color="#fff" />
             <Text style={styles.findFriendsPillText}>Find friends</Text>
@@ -170,7 +160,7 @@ export default function ProfileScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={PURPLE_LIGHT} style={{ marginTop: 60 }} />
+        <ActivityIndicator color={colors.purpleLight} style={{ marginTop: 60 }} />
       ) : (
         <>
           <View style={styles.avatarSection}>
@@ -244,23 +234,23 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>YOUR TASTE</Text>
             <View style={styles.sentimentRow}>
-              <View style={[styles.sentimentBox, { borderColor: '#22c55e' }]}>
+              <View style={[styles.sentimentBox, { borderColor: colors.sentiment.loved }]}>
                 <Text style={styles.sentimentEmoji}>👍</Text>
-                <Text style={[styles.sentimentCount, { color: '#22c55e' }]}>
+                <Text style={[styles.sentimentCount, { color: colors.sentiment.loved }]}>
                   {stats?.likedCount ?? 0}
                 </Text>
                 <Text style={styles.sentimentLabel}>Liked</Text>
               </View>
-              <View style={[styles.sentimentBox, { borderColor: '#9e9e9e' }]}>
+              <View style={[styles.sentimentBox, { borderColor: colors.sentiment.meh }]}>
                 <Text style={styles.sentimentEmoji}>😐</Text>
-                <Text style={[styles.sentimentCount, { color: '#9e9e9e' }]}>
+                <Text style={[styles.sentimentCount, { color: colors.sentiment.meh }]}>
                   {stats?.didntCareCount ?? 0}
                 </Text>
                 <Text style={styles.sentimentLabel}>Meh</Text>
               </View>
-              <View style={[styles.sentimentBox, { borderColor: '#ef4444' }]}>
+              <View style={[styles.sentimentBox, { borderColor: colors.sentiment.hated }]}>
                 <Text style={styles.sentimentEmoji}>👎</Text>
-                <Text style={[styles.sentimentCount, { color: '#ef4444' }]}>
+                <Text style={[styles.sentimentCount, { color: colors.sentiment.hated }]}>
                   {stats?.didntLikeCount ?? 0}
                 </Text>
                 <Text style={styles.sentimentLabel}>Disliked</Text>
@@ -280,7 +270,7 @@ export default function ProfileScreen() {
                       'game-controller'
                     }
                     size={24}
-                    color={PURPLE_LIGHT}
+                    color={colors.purpleLight}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -324,7 +314,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20,
@@ -332,13 +322,13 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: CARD, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border,
   },
   yirPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     height: 36, paddingHorizontal: 12, borderRadius: 18,
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
   },
   yirPillText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   // Phase 5 bug fix (#3): the find-friends entry point was an icon-only 36×36
@@ -346,40 +336,39 @@ const styles = StyleSheet.create({
   findFriendsPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     height: 36, paddingHorizontal: 12, borderRadius: 18,
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
   findFriendsPillText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   avatarSection: { alignItems: 'center', paddingBottom: 24 },
   avatar: {
     width: 88, height: 88, borderRadius: 44,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 12, borderWidth: 3, borderColor: PURPLE,
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 12,
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
+    marginBottom: 12, borderWidth: 3, borderColor: colors.purple,
+    ...glow.purple,
   },
   avatarText: { color: '#fff', fontSize: 36, fontWeight: 'bold' },
   displayName: { color: '#fff', fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
   username: { color: '#666', fontSize: 14, marginBottom: 8 },
   bio: { color: '#888', fontSize: 14, textAlign: 'center', paddingHorizontal: 32, marginBottom: 12, lineHeight: 20 },
   editProfileBtn: {
-    borderWidth: 1, borderColor: BORDER, borderRadius: 20,
+    borderWidth: 1, borderColor: colors.border, borderRadius: 20,
     paddingHorizontal: 20, paddingVertical: 8, marginTop: 4,
   },
   editProfileText: { color: '#aaa', fontSize: 13, fontWeight: '600' },
   statsRow: {
-    flexDirection: 'row', backgroundColor: CARD,
+    flexDirection: 'row', backgroundColor: colors.card,
     marginHorizontal: 16, borderRadius: 16,
-    padding: 20, borderWidth: 1, borderColor: BORDER, marginBottom: 24,
+    padding: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 24,
   },
   statBox: { flex: 1, alignItems: 'center' },
-  statValue: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
+  statValue: { color: '#fff', fontSize: 22, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
   statLabel: { color: '#666', fontSize: 11, marginTop: 3 },
-  statDivider: { width: 1, backgroundColor: BORDER },
+  statDivider: { width: 1, backgroundColor: colors.border },
   section: { paddingHorizontal: 16, marginBottom: 24 },
   sectionTitle: { color: '#555', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 12 },
   sentimentRow: { flexDirection: 'row', gap: 10 },
   sentimentBox: {
-    flex: 1, backgroundColor: CARD, borderRadius: 14,
+    flex: 1, backgroundColor: colors.card, borderRadius: 14,
     padding: 14, alignItems: 'center', borderWidth: 1.5,
   },
   sentimentEmoji: { fontSize: 24, marginBottom: 6 },
@@ -387,8 +376,8 @@ const styles = StyleSheet.create({
   sentimentLabel: { color: '#666', fontSize: 12 },
   topListCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: CARD, borderRadius: 14,
-    padding: 16, borderWidth: 1, borderColor: BORDER, gap: 12,
+    backgroundColor: colors.card, borderRadius: 14,
+    padding: 16, borderWidth: 1, borderColor: colors.border, gap: 12,
   },
   topListIcon: {
     width: 44, height: 44, borderRadius: 12,
@@ -396,10 +385,10 @@ const styles = StyleSheet.create({
   },
   topListTitle: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 2 },
   topListMeta: { color: '#666', fontSize: 13, textTransform: 'capitalize' },
-  progressCard: { backgroundColor: CARD, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BORDER },
+  progressCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.border },
   progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   progressLabel: { color: '#888', fontSize: 14 },
-  progressValue: { color: PURPLE_LIGHT, fontSize: 14, fontWeight: '600' },
+  progressValue: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
   progressBarBg: { height: 6, backgroundColor: '#2a2a38', borderRadius: 3 },
-  progressBarFill: { height: 6, backgroundColor: PURPLE, borderRadius: 3 },
+  progressBarFill: { height: 6, backgroundColor: colors.purple, borderRadius: 3 },
 });

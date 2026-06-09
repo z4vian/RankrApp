@@ -63,8 +63,11 @@ export function EngagementBar({
       <TouchableOpacity
         onPress={onCommentsPress}
         activeOpacity={0.7}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         style={[styles.action, styles.commentChip]}
+        accessibilityRole="button"
+        accessibilityLabel={`Comments, ${commentCount}`}
+        accessibilityHint="Opens the comments thread"
       >
         <Ionicons
           name="chatbubble-outline"
@@ -116,6 +119,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   spacer: {
     flex: 1,

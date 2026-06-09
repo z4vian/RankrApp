@@ -30,7 +30,7 @@ import {
   type FollowUser,
 } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
-import { colors, radius, spacing, typography } from '@/lib/theme';
+import { colors, glow, radius, spacing, typography } from '@/lib/theme';
 import {
   Avatar,
   EmptyState,
@@ -384,7 +384,9 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.bellButton}
           onPress={() => router.push('/notifications' as any)}
-          hitSlop={6}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         >
           <Ionicons name="notifications-outline" size={20} color="#aaa" />
           {unreadCount > 0 ? (
@@ -631,8 +633,7 @@ const styles = StyleSheet.create({
   composeButton: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
-    shadowColor: colors.purple, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
+    ...glow.purpleStrong,
   },
 
   emptyWrap: { paddingTop: 40 },

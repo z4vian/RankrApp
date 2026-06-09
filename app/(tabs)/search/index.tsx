@@ -1,12 +1,7 @@
+import { colors, glow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 const CATEGORIES = [
   {
@@ -100,7 +95,7 @@ export default function SearchLanding() {
         </View>
 
         <View style={styles.tipBox}>
-          <Ionicons name="information-circle-outline" size={16} color={PURPLE_LIGHT} />
+          <Ionicons name="information-circle-outline" size={16} color={colors.purpleLight} />
           <Text style={styles.tipText}>
             Open a list first, then search to add items directly to it
           </Text>
@@ -111,8 +106,8 @@ export default function SearchLanding() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
-  container: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20,
   },
@@ -129,12 +124,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
     borderRadius: 16,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    ...glow.purple,
   },
   discoverIconWrap: {
     width: 48, height: 48, borderRadius: 14,
@@ -152,11 +144,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   gridCard: {
-    backgroundColor: CARD,
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: colors.border,
     // 2-col layout: take ~half the available width, minus the row gap.
     flexBasis: '47%',
     flexGrow: 1,

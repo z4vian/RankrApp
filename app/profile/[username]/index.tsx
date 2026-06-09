@@ -336,7 +336,13 @@ export default function PublicProfileScreen() {
 
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.backBtn} onPress={onPress} hitSlop={10}>
+    <TouchableOpacity
+      style={styles.backBtn}
+      onPress={onPress}
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel="Go back"
+    >
       <Ionicons name="chevron-back" size={22} color={colors.text} />
     </TouchableOpacity>
   );

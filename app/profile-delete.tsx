@@ -75,9 +75,11 @@ export default function ProfileDeleteScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
-          hitSlop={8}
+          hitSlop={12}
           style={styles.backBtn}
           disabled={deleting}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>

@@ -10,7 +10,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { categoryIcon } from './_categoryIcon';
-import { colors, radius, spacing, typography } from '@/lib/theme';
+import { colors, radius, scoreColor, spacing, typography } from '@/lib/theme';
 
 export interface ListItemPreviewCardProps {
   title: string;
@@ -22,12 +22,6 @@ export interface ListItemPreviewCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-function scoreColor(rank: number): string {
-  if (rank >= 8) return colors.success;
-  if (rank >= 6) return colors.warning;
-  if (rank >= 4) return colors.attention;
-  return colors.error;
-}
 
 /** Compact horizontal card previewing an attached list_item — thumbnail + title/subtitle + category or score. */
 export function ListItemPreviewCard({
@@ -94,7 +88,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.cardElevated,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSoft,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -106,6 +100,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: colors.card,
+    borderWidth: 0.5,
+    borderColor: colors.imageBorder,
   },
   thumb: {
     width: '100%',

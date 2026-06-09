@@ -44,6 +44,8 @@ const styles = StyleSheet.create({
   imageWrap: {
     backgroundColor: colors.card,
     overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: colors.imageBorder,
   },
   imageFill: {
     width: '100%',

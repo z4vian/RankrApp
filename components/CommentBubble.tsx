@@ -73,7 +73,7 @@ export function CommentBubble({
           <TouchableOpacity
             onPress={onDelete}
             activeOpacity={0.7}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={styles.deleteBtn}
           >
             <Text style={styles.deleteLabel}>Delete</Text>

@@ -26,7 +26,7 @@ import {
   type ListItemDetail,
 } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
-import { colors, radius, spacing, typography } from '@/lib/theme';
+import { colors, radius, scoreColor, spacing, typography } from '@/lib/theme';
 import {
   CommentBubble,
   CommentInput,
@@ -61,17 +61,9 @@ const sentimentMeta: Record<
   string,
   { label: string; color: string; emoji: string }
 > = {
-  liked: { label: 'Liked', color: colors.success, emoji: '👍' },
-  didnt_care: { label: 'Meh', color: colors.textSecondary, emoji: '😐' },
-  didnt_like: { label: 'Disliked', color: colors.error, emoji: '👎' },
-};
-
-const scoreColor = (rank: number | null): string => {
-  if (rank === null) return colors.textMuted;
-  if (rank >= 8) return colors.success;
-  if (rank >= 6) return colors.warning;
-  if (rank >= 4) return colors.attention;
-  return colors.error;
+  liked: { label: 'Liked', color: colors.sentiment.loved, emoji: '👍' },
+  didnt_care: { label: 'Meh', color: colors.sentiment.meh, emoji: '😐' },
+  didnt_like: { label: 'Disliked', color: colors.sentiment.hated, emoji: '👎' },
 };
 
 // ---------------------------------------------------------------------------
@@ -579,7 +571,9 @@ export default function ListItemDetailScreen() {
             <Text style={styles.watchedHeaderTitle}>Watched with</Text>
             <TouchableOpacity
               onPress={() => setWatchedSheetOpen(false)}
-              hitSlop={8}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close watched-with sheet"
             >
               <Ionicons name="close" size={22} color={colors.text} />
             </TouchableOpacity>
@@ -605,8 +599,10 @@ export default function ListItemDetailScreen() {
                     isOwner ? (
                       <TouchableOpacity
                         onPress={() => handleUntagWatchedWith(u.id)}
-                        hitSlop={6}
+                        hitSlop={12}
                         style={styles.untagBtn}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${u.display_name ?? u.username ?? 'user'}`}
                       >
                         <Ionicons name="close-circle" size={20} color={colors.textMuted} />
                       </TouchableOpacity>
@@ -628,7 +624,13 @@ export default function ListItemDetailScreen() {
 
 function BackButton({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.backBtn} onPress={onPress} hitSlop={10}>
+    <TouchableOpacity
+      style={styles.backBtn}
+      onPress={onPress}
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel="Go back"
+    >
       <Ionicons name="chevron-back" size={22} color={colors.text} />
     </TouchableOpacity>
   );

@@ -2,6 +2,7 @@ import { useToast } from '@/components';
 import { useActiveList } from '@/lib/ListContext';
 import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
+import { colors, glow, scoreColor, sentimentColor } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,12 +13,6 @@ import {
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
-
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 type ListItem = {
   id: string;
@@ -34,20 +29,6 @@ type ListItem = {
 
 type Sentiment = 'liked' | 'didnt_care' | 'didnt_like';
 
-const scoreColor = (rank: number | null) => {
-  if (rank === null) return '#555';
-  if (rank >= 8) return '#22c55e';
-  if (rank >= 6) return '#eab308';
-  if (rank >= 4) return '#f97316';
-  return '#ef4444';
-};
-
-const sentimentColor = (s: string | null) => {
-  if (s === 'liked') return '#22c55e';
-  if (s === 'didnt_care') return '#9e9e9e';
-  if (s === 'didnt_like') return '#ef4444';
-  return PURPLE;
-};
 
 type Visibility = 'public' | 'private';
 
@@ -103,6 +84,11 @@ export default function ListDetail() {
   const [editCategory, setEditCategory] = useState<Category>('movies');
   const [editVisibility, setEditVisibility] = useState<Visibility>('private');
   const [listSaving, setListSaving] = useState(false);
+
+  // T1 Fix 3 — in-list search. Filters the already-loaded items array by
+  // title (case-insensitive substring). No debounce — local filter is
+  // instant.
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchItems = async () => {
     setLoading(true);
@@ -250,7 +236,13 @@ export default function ListDetail() {
     .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
   const unrankedItems = rankableItems.filter(i => i.rank === null);
   const allRankableItems = [...rankedItems, ...unrankedItems];
-  const displayItems = activeTab === 'rankings' ? allRankableItems : bookmarkedItems;
+  const tabItems = activeTab === 'rankings' ? allRankableItems : bookmarkedItems;
+  // T1 Fix 3 — apply local search filter on top of the active tab's items.
+  // Case-insensitive substring match against item.title.
+  const searchTrimmed = searchQuery.trim().toLowerCase();
+  const displayItems = searchTrimmed.length === 0
+    ? tabItems
+    : tabItems.filter(i => i.title.toLowerCase().includes(searchTrimmed));
 
   const avgScore = rankedItems.length > 0
     ? (rankedItems.reduce((sum, i) => sum + (i.rank ?? 0), 0) / rankedItems.length).toFixed(1)
@@ -403,7 +395,7 @@ export default function ListDetail() {
                 <Text style={styles.positionDash}>—</Text>
               )
             ) : (
-              <Ionicons name="bookmark" size={14} color={PURPLE_LIGHT} />
+              <Ionicons name="bookmark" size={14} color={colors.purpleLight} />
             )}
           </View>
           {item.image_url ? (
@@ -447,7 +439,7 @@ export default function ListDetail() {
     <View style={{ flex: 1 }}>
       <View style={styles.container}>
         {loading ? (
-          <ActivityIndicator color={PURPLE_LIGHT} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.purpleLight} style={{ marginTop: 40 }} />
         ) : (
           <DraggableFlatList
             data={displayItems}
@@ -556,6 +548,37 @@ export default function ListDetail() {
                   </View>
                 )}
 
+                {/* T1 Fix 3 — in-list search. Sits above the Rankings /
+                    Saved tab toggle. Filters the local `items` array
+                    in-memory (no server roundtrip). */}
+                <View style={styles.searchRow}>
+                  <Ionicons
+                    name="search"
+                    size={16}
+                    color={colors.textMuted}
+                    style={{ marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search items"
+                    placeholderTextColor={colors.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="search"
+                  />
+                  {searchQuery.length > 0 ? (
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery('')}
+                      hitSlop={8}
+                      style={styles.searchClearBtn}
+                    >
+                      <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
                 {/* Tab toggle */}
                 <View style={styles.tabToggle}>
                   <TouchableOpacity
@@ -583,13 +606,25 @@ export default function ListDetail() {
                   </TouchableOpacity>
                 </View>
 
-                {displayItems.length === 0 && (
+                {displayItems.length === 0 && searchTrimmed.length > 0 && (
+                  // T1 Fix 3 — inline empty state for no-matches search.
+                  // Smaller than the default empty state, just enough to
+                  // tell the user their query had no hits.
+                  <View style={styles.searchEmpty}>
+                    <Ionicons name="search" size={18} color={colors.textMuted} />
+                    <Text style={styles.searchEmptyText}>
+                      No items match &ldquo;{searchQuery.trim()}&rdquo;.
+                    </Text>
+                  </View>
+                )}
+
+                {displayItems.length === 0 && searchTrimmed.length === 0 && (
                   <View style={styles.empty}>
                     <View style={styles.emptyIcon}>
                       <Ionicons
                         name={activeTab === 'rankings' ? 'add-circle-outline' : 'bookmark-outline'}
                         size={40}
-                        color={PURPLE_LIGHT}
+                        color={colors.purpleLight}
                       />
                     </View>
                     <Text style={styles.emptyText}>
@@ -662,7 +697,7 @@ export default function ListDetail() {
                   )}
                   {editingItem.bookmarked && (
                     <View style={styles.bookmarkBadge}>
-                      <Ionicons name="bookmark" size={12} color={PURPLE_LIGHT} />
+                      <Ionicons name="bookmark" size={12} color={colors.purpleLight} />
                       <Text style={styles.bookmarkBadgeText}>Saved for Later</Text>
                     </View>
                   )}
@@ -710,7 +745,7 @@ export default function ListDetail() {
 
               <Text style={styles.sectionLabel}>Photos</Text>
               <TouchableOpacity style={styles.photoBtn} onPress={handlePickPhoto}>
-                <Ionicons name="camera-outline" size={20} color={PURPLE_LIGHT} />
+                <Ionicons name="camera-outline" size={20} color={colors.purpleLight} />
                 <Text style={styles.photoBtnText}>Add Photos</Text>
               </TouchableOpacity>
               {editPhotos.length > 0 && (
@@ -736,7 +771,7 @@ export default function ListDetail() {
 
               {editingItem.bookmarked && (
                 <TouchableOpacity style={styles.moveToRankingsBtn} onPress={handleMoveToRankings}>
-                  <Ionicons name="trophy-outline" size={16} color={PURPLE_LIGHT} />
+                  <Ionicons name="trophy-outline" size={16} color={colors.purpleLight} />
                   <Text style={styles.moveToRankingsText}>Move to Rankings</Text>
                 </TouchableOpacity>
               )}
@@ -768,7 +803,12 @@ export default function ListDetail() {
             <>
               <View style={styles.listEditHeader}>
                 <Text style={styles.listEditTitle}>Edit list</Text>
-                <TouchableOpacity onPress={closeListEditSheet} hitSlop={8}>
+                <TouchableOpacity
+                  onPress={closeListEditSheet}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close edit list"
+                >
                   <Ionicons name="close" size={22} color="#888" />
                 </TouchableOpacity>
               </View>
@@ -907,7 +947,7 @@ export default function ListDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: colors.bg },
   coverContainer: { height: 220, position: 'relative' },
   coverImage: { width: '100%', height: '100%' },
   coverPlaceholder: { width: '100%', height: '100%', backgroundColor: '#1a1228' },
@@ -928,44 +968,83 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', marginTop: 10,
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
-  visibilityPillPublic: { backgroundColor: PURPLE, borderColor: PURPLE },
+  visibilityPillPublic: { backgroundColor: colors.purple, borderColor: colors.purple },
   visibilityPillText: { color: '#bbb', fontSize: 11, fontWeight: '600' },
   visibilityPillTextPublic: { color: '#fff' },
   statsBar: {
-    flexDirection: 'row', backgroundColor: CARD,
+    flexDirection: 'row', backgroundColor: colors.card,
     marginHorizontal: 16, marginTop: -20,
     borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8,
   },
   statItem: { flex: 1, alignItems: 'center' },
-  statValue: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  statValue: { color: '#fff', fontSize: 20, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
   statLabel: { color: '#666', fontSize: 11, marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: BORDER },
+  statDivider: { width: 1, backgroundColor: colors.border },
   progressBox: {
-    marginHorizontal: 16, marginTop: 12, backgroundColor: CARD,
-    borderRadius: 12, padding: 14, borderWidth: 1, borderColor: BORDER,
+    marginHorizontal: 16, marginTop: 12, backgroundColor: colors.card,
+    borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border,
   },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   progressText: { color: '#888', fontSize: 13 },
-  progressPercent: { color: PURPLE_LIGHT, fontSize: 13, fontWeight: '600' },
+  progressPercent: { color: colors.purpleLight, fontSize: 13, fontWeight: '600' },
   progressBarBg: { height: 4, backgroundColor: '#2a2a38', borderRadius: 2 },
-  progressBarFill: { height: 4, backgroundColor: PURPLE, borderRadius: 2 },
+  progressBarFill: { height: 4, backgroundColor: colors.purple, borderRadius: 2 },
+
+  // T1 Fix 3 — in-list search input. Subtle cardElevated background so it
+  // doesn't compete with the tab toggle below.
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    height: 38,
+    backgroundColor: colors.cardElevated,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    padding: 0,
+  },
+  searchClearBtn: {
+    marginLeft: 8,
+    padding: 2,
+  },
+  searchEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 20,
+    paddingVertical: 16,
+  },
+  searchEmptyText: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+
   tabToggle: {
     flexDirection: 'row', marginHorizontal: 16, marginTop: 16,
-    backgroundColor: CARD, borderRadius: 12,
-    padding: 4, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 12,
+    padding: 4, borderWidth: 1, borderColor: colors.border,
   },
   tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
-  tabBtnActive: { backgroundColor: PURPLE },
+  tabBtnActive: { backgroundColor: colors.purple },
   tabBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tabBtnText: { color: '#666', fontSize: 14, fontWeight: '600' },
   tabBtnTextActive: { color: '#fff' },
   tabBadge: {
-    backgroundColor: PURPLE_LIGHT, borderRadius: 10,
+    backgroundColor: colors.purpleLight, borderRadius: 10,
     paddingHorizontal: 6, paddingVertical: 2,
   },
   tabBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
@@ -985,12 +1064,12 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 16, marginBottom: 8,
-    backgroundColor: CARD, borderRadius: 14,
-    borderWidth: 1, borderColor: BORDER, overflow: 'hidden',
+    backgroundColor: colors.card, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
   },
   itemCardActive: {
-    opacity: 0.9, shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8,
+    opacity: 0.9,
+    ...glow.purple,
   },
   positionCol: { width: 36, alignItems: 'center' },
   positionText: { color: '#666', fontSize: 13, fontWeight: '700' },
@@ -1008,10 +1087,9 @@ const styles = StyleSheet.create({
   scoreText: { fontSize: 13, fontWeight: 'bold' },
   fab: {
     position: 'absolute', bottom: 24, right: 24,
-    backgroundColor: PURPLE, width: 56, height: 56,
+    backgroundColor: colors.purple, width: 56, height: 56,
     borderRadius: 28, justifyContent: 'center', alignItems: 'center',
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5, shadowRadius: 8, elevation: 8,
+    ...glow.purpleStrong,
   },
   sheetBg: { backgroundColor: '#15151e', borderRadius: 24 },
   sheetContent: { padding: 20, paddingBottom: 40 },
@@ -1019,7 +1097,7 @@ const styles = StyleSheet.create({
   sheetImage: { width: 64, height: 64, borderRadius: 10 },
   sheetImagePlaceholder: {
     width: 64, height: 64, borderRadius: 10,
-    backgroundColor: CARD, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center',
   },
   sheetTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 3 },
   sheetSubtitle: { color: '#777', fontSize: 14, marginBottom: 6 },
@@ -1032,7 +1110,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     marginTop: 4,
   },
-  bookmarkBadgeText: { color: PURPLE_LIGHT, fontSize: 12 },
+  bookmarkBadgeText: { color: colors.purpleLight, fontSize: 12 },
   sectionLabel: {
     color: '#666', fontSize: 11, fontWeight: '700',
     letterSpacing: 1.5, marginBottom: 10, textTransform: 'uppercase',
@@ -1040,31 +1118,31 @@ const styles = StyleSheet.create({
   sentimentRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   sentimentBtn: {
     flex: 1, alignItems: 'center', padding: 12,
-    borderRadius: 12, borderWidth: 1.5, borderColor: BORDER, gap: 4,
+    borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, gap: 4,
   },
   sentimentEmoji: { fontSize: 22 },
   sentimentLabel: { color: '#777', fontSize: 12, fontWeight: '500' },
   notesInput: {
-    backgroundColor: CARD, color: '#fff', borderRadius: 12, padding: 14,
+    backgroundColor: colors.card, color: '#fff', borderRadius: 12, padding: 14,
     fontSize: 14, textAlignVertical: 'top', minHeight: 100,
-    marginBottom: 24, borderWidth: 1, borderColor: BORDER,
+    marginBottom: 24, borderWidth: 1, borderColor: colors.border,
   },
   photoBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: CARD, borderRadius: 12, padding: 14,
-    marginBottom: 16, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 12, padding: 14,
+    marginBottom: 16, borderWidth: 1, borderColor: colors.border,
   },
-  photoBtnText: { color: PURPLE_LIGHT, fontSize: 14 },
+  photoBtnText: { color: colors.purpleLight, fontSize: 14 },
   photoThumb: { width: 80, height: 80, borderRadius: 10 },
   removePhoto: { position: 'absolute', top: -4, right: -4 },
-  saveBtn: { backgroundColor: PURPLE, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 12 },
+  saveBtn: { backgroundColor: colors.purple, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 12 },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   moveToRankingsBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, padding: 14, marginBottom: 4,
-    backgroundColor: CARD, borderRadius: 14, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border,
   },
-  moveToRankingsText: { color: PURPLE_LIGHT, fontSize: 14, fontWeight: '600' },
+  moveToRankingsText: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
   removeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 14 },
   removeBtnText: { color: '#ef4444', fontSize: 14 },
 
@@ -1081,7 +1159,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
   editListPillText: { color: '#bbb', fontSize: 11, fontWeight: '600' },
 
@@ -1092,9 +1170,9 @@ const styles = StyleSheet.create({
   },
   listEditTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
   listEditInput: {
-    backgroundColor: CARD, color: '#fff', borderRadius: 10,
+    backgroundColor: colors.card, color: '#fff', borderRadius: 10,
     padding: 14, fontSize: 15,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
   listEditTextarea: { height: 90, textAlignVertical: 'top' },
   fieldHint: { color: '#666', fontSize: 11, marginTop: 4 },
@@ -1107,26 +1185,26 @@ const styles = StyleSheet.create({
   },
   catBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: CARD, borderRadius: 10,
+    backgroundColor: colors.card, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 10, gap: 6,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
     flexGrow: 1, flexBasis: 88,
   },
-  catBtnActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  catBtnActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   catBtnText: { color: '#aaa', fontSize: 13 },
   catBtnTextActive: { color: '#fff', fontWeight: '600' },
   // Visibility row
   visRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   visPill: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: CARD, borderRadius: 10, padding: 12,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: colors.border,
   },
-  visPillActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  visPillActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   visTitle: { color: '#ddd', fontSize: 14, fontWeight: '600' },
   visTitleActive: { color: '#fff' },
   visSubtitle: { color: '#666', fontSize: 11, marginTop: 1 },
-  visSubtitleActive: { color: PURPLE_LIGHT },
+  visSubtitleActive: { color: colors.purpleLight },
   cancelBtn: { alignItems: 'center', padding: 14, marginTop: 4 },
   cancelBtnText: { color: '#888', fontSize: 14 },
 });

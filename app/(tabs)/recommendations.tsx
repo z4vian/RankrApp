@@ -25,6 +25,7 @@ import {
   setCachedRecsForList,
   invalidateRecsCacheForList,
 } from '@/lib/recommendationsCache';
+import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -50,11 +51,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Constants
 // ---------------------------------------------------------------------------
 
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
 const CARD_BG = '#1a1a24';
-const BORDER = '#2a2a38';
 const INACTIVE_TAB = '#1e1e2e';
 const SECTION_BG = '#14141e';
 
@@ -227,7 +224,7 @@ function SectionView({ list, onCardPress }: SectionViewProps) {
       {/* Section body */}
       {state.status === 'loading' ? (
         <View style={styles.sectionLoadingRow}>
-          <ActivityIndicator size="small" color={PURPLE_LIGHT} />
+          <ActivityIndicator size="small" color={colors.purpleLight} />
         </View>
       ) : state.status === 'error' ? (
         <View style={styles.sectionErrorRow}>
@@ -331,7 +328,7 @@ function FeedView({ category, isActive }: FeedViewProps) {
   if (listsLoading) {
     return (
       <View style={styles.centeredState}>
-        <ActivityIndicator size="large" color={PURPLE_LIGHT} />
+        <ActivityIndicator size="large" color={colors.purpleLight} />
         <Text style={[styles.stateSubtitle, { marginTop: 16 }]}>
           Loading recommendations…
         </Text>
@@ -355,13 +352,13 @@ function FeedView({ category, isActive }: FeedViewProps) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={PURPLE_LIGHT}
-            colors={[PURPLE]}
+            tintColor={colors.purpleLight}
+            colors={[colors.purple]}
           />
         }
       >
         <View style={styles.stateIconWrap}>
-          <Ionicons name="sparkles-outline" size={40} color={PURPLE_LIGHT} />
+          <Ionicons name="sparkles-outline" size={40} color={colors.purpleLight} />
         </View>
         <Text style={styles.stateTitle}>No {categoryLabel} lists yet</Text>
         <Text style={styles.stateSubtitle}>
@@ -386,8 +383,8 @@ function FeedView({ category, isActive }: FeedViewProps) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={PURPLE_LIGHT}
-          colors={[PURPLE]}
+          tintColor={colors.purpleLight}
+          colors={[colors.purple]}
         />
       }
     >
@@ -410,13 +407,26 @@ function FeedView({ category, isActive }: FeedViewProps) {
 
 export default function RecommendationsScreen() {
   const [activeCategory, setActiveCategory] = useState<Category>('movies');
+  // Track which tabs have ever been visited so we can skip rendering tabs
+  // that the user has never opened — saves a full render pass per tab.
+  const [visited, setVisited] = useState<Set<Category>>(() => new Set(['movies']));
+
+  const handleSelectCategory = useCallback((cat: Category) => {
+    setActiveCategory(cat);
+    setVisited((prev) => {
+      if (prev.has(cat)) return prev;
+      const next = new Set(prev);
+      next.add(cat);
+      return next;
+    });
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="sparkles" size={22} color={PURPLE_LIGHT} />
+          <Ionicons name="sparkles" size={22} color={colors.purpleLight} />
           <Text style={styles.headerTitle}>For You</Text>
         </View>
       </View>
@@ -438,13 +448,16 @@ export default function RecommendationsScreen() {
                 styles.tabPill,
                 active ? styles.tabPillActive : styles.tabPillInactive,
               ]}
-              onPress={() => setActiveCategory(tab.key)}
+              onPress={() => handleSelectCategory(tab.key)}
               activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected: active }}
             >
               <Ionicons
                 name={tab.icon}
                 size={14}
-                color={active ? '#fff' : '#666'}
+                color={active ? colors.purpleLight : '#666'}
                 style={{ marginRight: 5 }}
               />
               <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
@@ -455,9 +468,10 @@ export default function RecommendationsScreen() {
         })}
       </ScrollView>
 
-      {/* Feed — mount all tabs so state/cache persists on switch */}
+      {/* Feed — mount tabs only after first visit so state/cache persists on
+          switch, but unseen tabs don't pay any render or fetch cost. */}
       <View style={{ flex: 1 }}>
-        {TABS.map((tab) => (
+        {TABS.filter((tab) => visited.has(tab.key)).map((tab) => (
           <View
             key={tab.key}
             style={[
@@ -484,7 +498,7 @@ export default function RecommendationsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: colors.bg,
   },
 
   // ---- Header ----
@@ -529,12 +543,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   tabPillActive: {
-    backgroundColor: PURPLE,
-    borderColor: PURPLE,
+    backgroundColor: colors.cardElevated,
+    borderColor: colors.purple,
   },
   tabPillInactive: {
     backgroundColor: INACTIVE_TAB,
-    borderColor: BORDER,
+    borderColor: colors.border,
   },
   tabLabel: {
     color: '#666',
@@ -542,7 +556,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tabLabelActive: {
-    color: '#fff',
+    color: colors.text,
   },
 
   // ---- Feed ----
@@ -561,7 +575,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: BORDER,
+    borderColor: colors.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -603,7 +617,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   retryButton: {
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -633,11 +647,13 @@ const styles = StyleSheet.create({
     backgroundColor: CARD_BG,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   hCardImage: {
     width: '100%',
+    borderBottomWidth: 0.5,
+    borderColor: colors.imageBorder,
   },
   hCardImagePlaceholder: {
     width: '100%',
@@ -692,7 +708,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   stateButton: {
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
     borderRadius: 20,
     paddingHorizontal: 24,
     paddingVertical: 12,

@@ -1,26 +1,32 @@
+import { colors, glow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const PURPLE = '#7C3AED';
-const TAB_BG = '#13131a';
 const INACTIVE = '#444';
+const BAR_CONTENT_HEIGHT = 60; // icon + label area
+const BAR_TOP_PADDING = 10;
+const BAR_MIN_BOTTOM_PADDING = 12;
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, BAR_MIN_BOTTOM_PADDING);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: TAB_BG,
+          backgroundColor: colors.bgDeeper,
           borderTopColor: '#1e1e2a',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 70,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-          paddingTop: 10,
+          height: BAR_CONTENT_HEIGHT + bottomPad,
+          paddingBottom: bottomPad,
+          paddingTop: BAR_TOP_PADDING,
           elevation: 0,
         },
-        tabBarActiveTintColor: PURPLE,
+        tabBarActiveTintColor: colors.purple,
         tabBarInactiveTintColor: INACTIVE,
         tabBarLabelStyle: {
           fontSize: 11,
@@ -109,11 +115,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   searchActive: {
-    backgroundColor: '#7C3AED',
-    borderColor: '#7C3AED',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
+    backgroundColor: colors.purple,
+    borderColor: colors.purple,
+    ...glow.purpleStrong,
   },
 });

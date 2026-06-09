@@ -262,7 +262,13 @@ export default function YearInReviewScreen() {
 function Header({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} hitSlop={8} style={styles.backBtn}>
+      <TouchableOpacity
+        onPress={onBack}
+        hitSlop={12}
+        style={styles.backBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
         <Ionicons name="chevron-back" size={22} color={colors.text} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{title}</Text>

@@ -99,7 +99,12 @@ export function UserTagPicker({
             style={styles.input}
           />
           {query.length > 0 ? (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={6}>
+            <TouchableOpacity
+              onPress={() => setQuery('')}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
               <Ionicons name="close-circle" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           ) : null}
@@ -107,8 +112,10 @@ export function UserTagPicker({
         <TouchableOpacity
           onPress={onClose}
           activeOpacity={0.7}
-          hitSlop={8}
+          hitSlop={12}
           style={styles.closeBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Close user picker"
         >
           <Ionicons name="close" size={20} color={colors.textSecondary} />
         </TouchableOpacity>

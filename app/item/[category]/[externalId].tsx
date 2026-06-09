@@ -7,14 +7,19 @@
  */
 
 import {
+  fetchBookDetail,
   fetchGameDetail,
   fetchMovieDetail,
   fetchMusicDetail,
+  fetchTvDetail,
+  BookDetail,
   GameDetail,
   MovieDetail,
   MusicDetail,
+  TvDetail,
 } from '@/lib/itemDetails';
 import { supabase } from '@/lib/supabase';
+import { colors, glow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
@@ -24,11 +29,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,16 +42,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Constants
 // ---------------------------------------------------------------------------
 
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
-
-const { width: SCREEN_W } = Dimensions.get('window');
-
-type Category = 'movies' | 'games' | 'music';
-type AnyDetail = MovieDetail | GameDetail | MusicDetail;
+type Category = 'movies' | 'tv' | 'games' | 'music' | 'books';
+type AnyDetail = MovieDetail | TvDetail | GameDetail | MusicDetail | BookDetail;
 
 type UserList = { id: string; title: string; category: string };
 type SheetMode = 'add' | 'save';
@@ -58,17 +55,25 @@ type SheetMode = 'add' | 'save';
 function isMovieDetail(d: AnyDetail): d is MovieDetail {
   return d.category === 'movies';
 }
+function isTvDetail(d: AnyDetail): d is TvDetail {
+  return d.category === 'tv';
+}
 function isGameDetail(d: AnyDetail): d is GameDetail {
   return d.category === 'games';
 }
 function isMusicDetail(d: AnyDetail): d is MusicDetail {
   return d.category === 'music';
 }
+function isBookDetail(d: AnyDetail): d is BookDetail {
+  return d.category === 'books';
+}
 
-function heroHeight(category: Category): number {
-  if (category === 'movies') return Math.round(SCREEN_W * 1.4);
-  if (category === 'games') return Math.round(SCREEN_W * 0.6);
-  return Math.round(SCREEN_W * 1.0); // square for music
+function heroHeight(category: Category, screenWidth: number): number {
+  if (category === 'movies') return Math.round(screenWidth * 1.4);
+  if (category === 'tv') return Math.round(screenWidth * 1.4); // 2:3 portrait like movies (TMDB)
+  if (category === 'games') return Math.round(screenWidth * 0.6);
+  if (category === 'books') return Math.round(screenWidth * 1.4); // tall portrait covers
+  return Math.round(screenWidth * 1.0); // square for music
 }
 
 function detailSubtitle(detail: AnyDetail): string {
@@ -80,6 +85,12 @@ function detailSubtitle(detail: AnyDetail): string {
       const m = detail.runtime_minutes % 60;
       parts.push(h > 0 ? `${h}h ${m}m` : `${m}m`);
     }
+    return parts.join(' · ');
+  }
+  if (isTvDetail(detail)) {
+    const parts: string[] = [];
+    if (detail.first_air_year) parts.push(detail.first_air_year);
+    if (detail.episode_count_label) parts.push(detail.episode_count_label);
     return parts.join(' · ');
   }
   if (isGameDetail(detail)) {
@@ -94,12 +105,20 @@ function detailSubtitle(detail: AnyDetail): string {
     if (detail.album) parts.push(detail.album);
     return parts.join(' · ');
   }
+  if (isBookDetail(detail)) {
+    const parts: string[] = [];
+    if (detail.authors.length > 0) parts.push(detail.authors.join(', '));
+    if (detail.publish_year) parts.push(detail.publish_year);
+    return parts.join(' · ');
+  }
   return '';
 }
 
 function detailDescription(detail: AnyDetail): string | null {
   if (isMovieDetail(detail)) return detail.overview;
+  if (isTvDetail(detail)) return detail.overview;
   if (isGameDetail(detail)) return detail.description;
+  if (isBookDetail(detail)) return detail.description;
   return null; // music has no description
 }
 
@@ -107,7 +126,8 @@ function detailDescription(detail: AnyDetail): string | null {
 // Small sub-components
 // ---------------------------------------------------------------------------
 
-function CastScroll({ cast }: { cast: MovieDetail['cast'] }) {
+/** Cast row — accepts movie or TV cast (structurally identical). */
+function CastScroll({ cast }: { cast: MovieDetail['cast'] | TvDetail['cast'] }) {
   if (cast.length === 0) return null;
   return (
     <View style={styles.section}>
@@ -135,7 +155,12 @@ function CastScroll({ cast }: { cast: MovieDetail['cast'] }) {
   );
 }
 
-function WatchProviderRow({ providers }: { providers: MovieDetail['watch_providers'] }) {
+/** Watch-provider row — accepts movie or TV providers (structurally identical). */
+function WatchProviderRow({
+  providers,
+}: {
+  providers: MovieDetail['watch_providers'] | TvDetail['watch_providers'];
+}) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>WHERE TO WATCH</Text>
@@ -171,8 +196,9 @@ function PlatformChips({ platforms }: { platforms: string[] }) {
 }
 
 function ScreenshotScroll({ screenshots }: { screenshots: string[] }) {
+  const { width: screenWidth } = useWindowDimensions();
   if (screenshots.length === 0) return null;
-  const ssH = Math.round(SCREEN_W * 0.35);
+  const ssH = Math.round(screenWidth * 0.35);
   const ssW = Math.round(ssH * (16 / 9));
   return (
     <View style={styles.section}>
@@ -211,6 +237,7 @@ function PreviewButton({ previewUrl }: { previewUrl: string | null }) {
 
 export default function ItemDetailScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const { category, externalId } = useLocalSearchParams<{ category: string; externalId: string }>();
 
   const [detail, setDetail] = useState<AnyDetail | null>(null);
@@ -234,8 +261,10 @@ export default function ItemDetailScreen() {
       let hadError = false;
       try {
         if (category === 'movies') result = await fetchMovieDetail(externalId);
+        else if (category === 'tv') result = await fetchTvDetail(externalId);
         else if (category === 'games') result = await fetchGameDetail(externalId);
         else if (category === 'music') result = await fetchMusicDetail(externalId);
+        else if (category === 'books') result = await fetchBookDetail(externalId);
       } catch {
         hadError = true;
       }
@@ -270,10 +299,14 @@ export default function ItemDetailScreen() {
     const title = detail.title;
     const sub: string | null = isMovieDetail(detail)
       ? (detail.release_year ?? null)
+      : isTvDetail(detail)
+      ? (detail.first_air_year ?? null)
       : isGameDetail(detail)
       ? (detail.platforms[0] ?? null)
       : isMusicDetail(detail)
       ? detail.artist
+      : isBookDetail(detail)
+      ? (detail.authors[0] ?? null)
       : null;
 
     // Dedup check
@@ -322,7 +355,7 @@ export default function ItemDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={PURPLE_LIGHT} />
+        <ActivityIndicator size="large" color={colors.purpleLight} />
       </View>
     );
   }
@@ -344,12 +377,12 @@ export default function ItemDetailScreen() {
     );
   }
 
-  const hH = heroHeight(category as Category);
+  const hH = heroHeight(category as Category, screenWidth);
   const description = detailDescription(detail);
   const subtitle = detailSubtitle(detail);
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -424,6 +457,47 @@ export default function ItemDetailScreen() {
             <PreviewButton previewUrl={detail.preview_url} />
           </View>
         )}
+
+        {isTvDetail(detail) && (
+          <>
+            <CastScroll cast={detail.cast} />
+            <WatchProviderRow providers={detail.watch_providers} />
+          </>
+        )}
+
+        {isBookDetail(detail) && (
+          <View style={styles.section}>
+            {detail.authors.length > 0 ? (
+              <>
+                <Text style={styles.sectionTitle}>AUTHORS</Text>
+                <View style={styles.chipsWrap}>
+                  {detail.authors.map((a, i) => (
+                    <View key={`a-${i}`} style={styles.chip}>
+                      <Text style={styles.chipText}>{a}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : null}
+            {detail.categories.length > 0 ? (
+              <>
+                <Text style={styles.sectionTitle}>CATEGORIES</Text>
+                <View style={styles.chipsWrap}>
+                  {detail.categories.map((c, i) => (
+                    <View key={`c-${i}`} style={styles.chip}>
+                      <Text style={styles.chipText}>{c}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : null}
+            {detail.page_count ? (
+              <Text style={styles.bookMetaLine}>
+                {detail.page_count.toLocaleString()} pages
+              </Text>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
 
       {/* Sticky action bar */}
@@ -441,7 +515,7 @@ export default function ItemDetailScreen() {
           onPress={() => openListPicker('save')}
           activeOpacity={0.85}
         >
-          <Ionicons name="bookmark-outline" size={18} color={PURPLE_LIGHT} />
+          <Ionicons name="bookmark-outline" size={18} color={colors.purpleLight} />
           <Text style={styles.actionButtonOutlinedText}>Save for Later</Text>
         </TouchableOpacity>
       </View>
@@ -471,10 +545,10 @@ export default function ItemDetailScreen() {
                 onPress={() => handlePickList(list)}
                 disabled={saving}
               >
-                <Ionicons name="list-outline" size={20} color={PURPLE_LIGHT} />
+                <Ionicons name="list-outline" size={20} color={colors.purpleLight} />
                 <Text style={styles.listOptionText}>{list.title}</Text>
                 {saving ? (
-                  <ActivityIndicator size="small" color={PURPLE_LIGHT} />
+                  <ActivityIndicator size="small" color={colors.purpleLight} />
                 ) : (
                   <Ionicons name="chevron-forward" size={18} color="#555" />
                 )}
@@ -494,13 +568,13 @@ export default function ItemDetailScreen() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: colors.bg,
   },
   errorContent: {
     flex: 1,
@@ -524,7 +598,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -645,7 +719,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#1a1a24',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -695,7 +769,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: colors.border,
   },
   esrbChip: {
     backgroundColor: '#2a1a1a',
@@ -713,7 +787,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
     borderRadius: 14,
     padding: 16,
     marginTop: 8,
@@ -738,7 +812,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     backgroundColor: 'rgba(15,15,19,0.95)',
     borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderTopColor: colors.border,
   },
   actionButtonFilled: {
     flex: 1,
@@ -746,13 +820,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
     borderRadius: 14,
     paddingVertical: 15,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    ...glow.purple,
   },
   actionButtonFilledText: {
     color: '#fff',
@@ -769,10 +840,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 15,
     borderWidth: 1.5,
-    borderColor: PURPLE,
+    borderColor: colors.purple,
   },
   actionButtonOutlinedText: {
-    color: PURPLE_LIGHT,
+    color: colors.purpleLight,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -785,13 +856,21 @@ const styles = StyleSheet.create({
   listOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: CARD,
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
     gap: 12,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: colors.border,
   },
   listOptionText: { flex: 1, color: '#fff', fontSize: 15 },
+
+  // Books — simple meta line for page_count etc. when a chip would feel
+  // visually heavy.
+  bookMetaLine: {
+    color: '#aaa',
+    fontSize: 13,
+    marginTop: 4,
+  },
 });

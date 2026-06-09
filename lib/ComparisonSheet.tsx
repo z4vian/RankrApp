@@ -1,9 +1,7 @@
+import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const PURPLE = '#7C3AED';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 export type RankedItem = {
   id: string;
@@ -30,6 +28,12 @@ export default function ComparisonSheet({
 }: Props) {
   if (!newItem || !compareItem) return null;
 
+  const choose = (which: 'new' | 'existing') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (which === 'new') onChooseNew();
+    else onChooseExisting();
+  };
+
   return (
     <View style={styles.overlay}>
       <View style={styles.card}>
@@ -37,7 +41,12 @@ export default function ComparisonSheet({
         <Text style={styles.hint}>Tap the one you like more</Text>
 
         <View style={styles.compareRow}>
-          <TouchableOpacity style={styles.option} onPress={onChooseNew}>
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => choose('new')}
+            accessibilityRole="button"
+            accessibilityLabel={`Prefer ${newItem.title} (new)`}
+          >
             {newItem.image_url ? (
               <Image source={{ uri: newItem.image_url }} style={styles.image} />
             ) : (
@@ -55,7 +64,12 @@ export default function ComparisonSheet({
             <Text style={styles.vs}>vs</Text>
           </View>
 
-          <TouchableOpacity style={styles.option} onPress={onChooseExisting}>
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => choose('existing')}
+            accessibilityRole="button"
+            accessibilityLabel={`Prefer ${compareItem.title}, ranked ${Number(compareItem.rank).toFixed(1)}`}
+          >
             {compareItem.image_url ? (
               <Image source={{ uri: compareItem.image_url }} style={styles.image} />
             ) : (
@@ -68,7 +82,12 @@ export default function ComparisonSheet({
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.cancelBtn} onPress={onDismiss}>
+        <TouchableOpacity
+          style={styles.cancelBtn}
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel comparison"
+        >
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       </View>
@@ -86,15 +105,15 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#15151e', borderRadius: 24,
     padding: 24, width: '100%',
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
   title: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 6 },
   hint: { color: '#666', fontSize: 13, textAlign: 'center', marginBottom: 24 },
   compareRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   option: {
-    flex: 1, backgroundColor: CARD, borderRadius: 16,
+    flex: 1, backgroundColor: colors.card, borderRadius: 16,
     padding: 12, alignItems: 'center', gap: 8,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
   image: { width: '100%', height: 100, borderRadius: 10 },
   imagePlaceholder: {
@@ -103,7 +122,7 @@ const styles = StyleSheet.create({
   },
   optionTitle: { color: '#fff', fontSize: 13, fontWeight: '600', textAlign: 'center' },
   newBadge: {
-    backgroundColor: PURPLE, borderRadius: 8,
+    backgroundColor: colors.purple, borderRadius: 8,
     paddingHorizontal: 8, paddingVertical: 3,
   },
   newBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },

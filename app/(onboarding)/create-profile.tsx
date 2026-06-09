@@ -1,13 +1,25 @@
 /**
  * app/(onboarding)/create-profile.tsx
  *
- * Step 1 of 2 in the post-signup onboarding flow. The user's username was
- * already chosen during signup (Phase 1) — we show it as a confirmation and
- * collect display name + bio + avatar. No skip; these fields are required
- * for the social experience.
+ * Step 1 of 2 in the post-signup onboarding flow.
+ *
+ * Two flows converge here:
+ *   - Email signup (Phase 1): username was chosen during signup. We render
+ *     it as a read-only confirmation row. User edits display name + bio +
+ *     avatar and continues.
+ *   - OAuth signup (Google): the HOTFIX-2 trigger created an empty profile
+ *     shell with id + display_name + avatar_url (from auth.users metadata)
+ *     but NO username. We must collect a username here, with the same live
+ *     validation + availability check as signup.tsx, before letting the
+ *     user proceed.
+ *
+ * Branching: `usernameLockedFromSignup` is true when the loaded profile
+ * already had a non-null username. It's false (the OAuth path) when the
+ * profile shell exists but username is null/empty.
  */
 
 import { useToast } from '@/components';
+import { isUsernameAvailable, validateUsername } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
 import { colors, radius, shadow, spacing, typography } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -29,6 +41,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+type UsernameCheckState =
+  | { kind: 'idle' }
+  | { kind: 'checking' }
+  | { kind: 'available' }
+  | { kind: 'taken' };
+
 export default function CreateProfileScreen() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -37,6 +55,11 @@ export default function CreateProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState('');
   const [username, setUsername] = useState('');
+  // T1 Fix 1 — when true, the username field is read-only (came from signup).
+  // When false (OAuth signup path), the user must enter one here.
+  const [usernameLockedFromSignup, setUsernameLockedFromSignup] = useState(true);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameCheck, setUsernameCheck] = useState<UsernameCheckState>({ kind: 'idle' });
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -50,23 +73,84 @@ export default function CreateProfileScreen() {
       }
       setUserId(user.id);
 
-      // Pre-fill from any existing profile row (signup already created one
-      // with the chosen username).
+      // Pre-fill from any existing profile row (email signup created one
+      // with the chosen username; OAuth created an empty shell via the
+      // HOTFIX-2 trigger).
       const { data: profile } = await supabase
         .from('profiles')
         .select('username, display_name, bio, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
+      const loadedUsername = (profile?.username as string | null) ?? '';
+      if (loadedUsername.length > 0) {
+        // Email signup path — username already chosen, lock the field.
+        setUsername(loadedUsername);
+        setUsernameLockedFromSignup(true);
+      } else {
+        // OAuth path — show empty editable username field. Seed with the
+        // intended_username from auth.users metadata if it exists (covers
+        // email-signup-with-pending-confirmation edge case too).
+        const intended =
+          (user.user_metadata as { intended_username?: string } | null)?.intended_username ?? '';
+        setUsername(intended);
+        setUsernameLockedFromSignup(false);
+      }
+
       if (profile) {
-        setUsername((profile.username as string | null) ?? '');
         setDisplayName((profile.display_name as string | null) ?? '');
         setBio((profile.bio as string | null) ?? '');
         setAvatarUrl((profile.avatar_url as string | null) ?? '');
+      } else {
+        // No profile row yet — fall back to auth metadata for the name +
+        // avatar so OAuth users see Google's values pre-filled even before
+        // the trigger fires.
+        const meta = (user.user_metadata as {
+          full_name?: string;
+          name?: string;
+          picture?: string;
+          avatar_url?: string;
+        } | null) ?? null;
+        if (meta) {
+          setDisplayName(meta.full_name ?? meta.name ?? '');
+          setAvatarUrl(meta.avatar_url ?? meta.picture ?? '');
+        }
       }
       setLoading(false);
     })();
   }, []);
+
+  // T1 Fix 1 — debounced live username availability check (500ms). Only
+  // runs when the field is editable (OAuth path) and the user has typed
+  // something. Mirrors signup.tsx.
+  useEffect(() => {
+    if (usernameLockedFromSignup) return;
+    setUsernameError(null);
+    if (!username) {
+      setUsernameCheck({ kind: 'idle' });
+      return;
+    }
+    const validationError = validateUsername(username);
+    if (validationError) {
+      setUsernameCheck({ kind: 'idle' });
+      return;
+    }
+    let cancelled = false;
+    setUsernameCheck({ kind: 'checking' });
+    const timer = setTimeout(async () => {
+      try {
+        const available = await isUsernameAvailable(username);
+        if (cancelled) return;
+        setUsernameCheck({ kind: available ? 'available' : 'taken' });
+      } catch {
+        if (!cancelled) setUsernameCheck({ kind: 'idle' });
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [username, usernameLockedFromSignup]);
 
   const handlePickAvatar = async () => {
     if (Platform.OS === 'web') {
@@ -110,6 +194,26 @@ export default function CreateProfileScreen() {
       showToast('Display name is required.', { tone: 'error' });
       return;
     }
+    // T1 Fix 1 — OAuth path: must validate the username the user typed
+    // before letting them proceed. Locked-from-signup users already have
+    // a validated username in the DB.
+    if (!usernameLockedFromSignup) {
+      const validationError = validateUsername(username);
+      if (validationError) {
+        setUsernameError(validationError);
+        showToast(validationError, { tone: 'error' });
+        return;
+      }
+      if (usernameCheck.kind === 'taken') {
+        setUsernameError('That username is taken.');
+        showToast('That username is taken.', { tone: 'error' });
+        return;
+      }
+      // Note: if the availability check is mid-flight ('checking'), we still
+      // proceed — the canonical authority is the DB unique constraint, which
+      // will surface a friendly error from createProfile (see signup.tsx).
+    }
+
     setSaving(true);
     const { error } = await supabase
       .from('profiles')
@@ -122,7 +226,13 @@ export default function CreateProfileScreen() {
       });
     setSaving(false);
     if (error) {
-      showToast(error.message, { tone: 'error' });
+      // Unique-violation on username surfaces as a friendly toast rather
+      // than the raw Postgres message.
+      if (error.code === '23505') {
+        showToast('That username is already taken.', { tone: 'error' });
+      } else {
+        showToast(error.message, { tone: 'error' });
+      }
       return;
     }
     router.push('/(onboarding)/first-rank' as any);
@@ -179,14 +289,52 @@ export default function CreateProfileScreen() {
             <Text style={styles.avatarHint}>Tap to add a photo</Text>
           </View>
 
-          {/* Username (read-only confirmation) */}
+          {/* Username — branches on signup path:
+              - Email signup: read-only confirmation (already chosen).
+              - OAuth signup: editable input with live availability check. */}
           <Text style={styles.fieldLabel}>Username</Text>
-          <View style={[styles.inputWrapper, styles.inputWrapperDisabled]}>
-            <Text style={styles.atSign}>@</Text>
-            <Text style={styles.usernameReadonly}>{username || 'username'}</Text>
-            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-          </View>
-          <Text style={styles.fieldHint}>Chosen at signup — can&apos;t be changed here</Text>
+          {usernameLockedFromSignup ? (
+            <>
+              <View style={[styles.inputWrapper, styles.inputWrapperDisabled]}>
+                <Text style={styles.atSign}>@</Text>
+                <Text style={styles.usernameReadonly}>{username || 'username'}</Text>
+                <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+              </View>
+              <Text style={styles.fieldHint}>Chosen at signup — can&apos;t be changed here</Text>
+            </>
+          ) : (
+            <>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.atSign}>@</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="username"
+                  placeholderTextColor={colors.textPlaceholder}
+                  value={username}
+                  onChangeText={(t) => setUsername(t.toLowerCase().trim())}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="username"
+                />
+                {usernameCheck.kind === 'checking' ? (
+                  <ActivityIndicator size="small" color={colors.textMuted} />
+                ) : usernameCheck.kind === 'available' ? (
+                  <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                ) : usernameCheck.kind === 'taken' ? (
+                  <Ionicons name="close-circle" size={18} color={colors.error} />
+                ) : null}
+              </View>
+              {usernameError ? (
+                <Text style={styles.fieldError}>{usernameError}</Text>
+              ) : usernameCheck.kind === 'taken' ? (
+                <Text style={styles.fieldError}>That username is taken</Text>
+              ) : (
+                <Text style={styles.fieldHint}>
+                  3-20 lowercase letters, numbers, underscores
+                </Text>
+              )}
+            </>
+          )}
 
           {/* Display name */}
           <Text style={styles.fieldLabel}>Display name</Text>
@@ -320,6 +468,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fieldHint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
+  fieldError: { ...typography.caption, color: colors.error, marginTop: spacing.xs },
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.card, borderRadius: radius.lg,

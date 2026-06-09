@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
 import {
   ActivityIndicator,
@@ -10,6 +11,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { useReducedMotion } from '@/lib/a11y';
 import { colors, spacing, typography } from '@/lib/theme';
 
 export interface LikeButtonProps {
@@ -38,22 +40,29 @@ export function LikeButton({
   style,
 }: LikeButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
+  const reducedMotion = useReducedMotion();
 
   const handlePress = () => {
-    Animated.sequence([
-      Animated.spring(scale, {
-        toValue: 1.3,
-        useNativeDriver: true,
-        speed: 50,
-        bounciness: 12,
-      }),
-      Animated.spring(scale, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 30,
-        bounciness: 10,
-      }),
-    ]).start();
+    if (!reducedMotion) {
+      Animated.sequence([
+        Animated.spring(scale, {
+          toValue: 1.3,
+          useNativeDriver: true,
+          speed: 50,
+          bounciness: 12,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 30,
+          bounciness: 10,
+        }),
+      ]).start();
+    }
+    // Light tap on like only (not unlike) for subtle reward feedback.
+    if (!liked) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
     onPress();
   };
 
@@ -66,8 +75,11 @@ export function LikeButton({
       onPress={handlePress}
       disabled={loading}
       activeOpacity={0.7}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       style={[styles.container, style]}
+      accessibilityRole="button"
+      accessibilityLabel={liked ? 'Unlike' : 'Like'}
+      accessibilityState={{ selected: liked, disabled: loading, busy: loading }}
     >
       {loading ? (
         <View style={{ width: iconSize, height: iconSize, alignItems: 'center', justifyContent: 'center' }}>
@@ -105,5 +117,6 @@ const styles = StyleSheet.create({
   count: {
     marginLeft: spacing.xs + 2,
     fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
 });

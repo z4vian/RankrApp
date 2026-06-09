@@ -18,7 +18,7 @@ import {
 import { categoryIcon } from '@/components/_categoryIcon';
 import { fetchProfileByUsername, type PublicProfile } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
-import { colors, radius, spacing, typography } from '@/lib/theme';
+import { colors, radius, scoreColor, spacing, typography } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -31,13 +31,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const scoreColor = (rank: number): string => {
-  if (rank >= 8) return colors.success;
-  if (rank >= 6) return colors.warning;
-  if (rank >= 4) return colors.attention;
-  return colors.error;
-};
 
 type LoadState =
   | { kind: 'loading' }
@@ -96,7 +89,9 @@ export default function CompareScreen() {
       <TouchableOpacity
         style={styles.backBtn}
         onPress={() => router.back()}
-        hitSlop={8}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
       >
         <Ionicons name="chevron-back" size={22} color={colors.text} />
       </TouchableOpacity>

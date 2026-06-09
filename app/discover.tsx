@@ -80,7 +80,9 @@ export default function DiscoverScreen() {
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.back()}
-          hitSlop={10}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>

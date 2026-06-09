@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -8,18 +9,16 @@ import {
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
-
 WebBrowser.maybeCompleteAuthSession();
+
+type FocusedField = 'email' | 'password' | null;
 
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState<FocusedField>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -65,30 +64,63 @@ export default function Login() {
           </View>
         ) : null}
 
-        <View style={styles.inputWrapper}>
-          <Ionicons name="mail-outline" size={18} color="#555" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#555"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Email</Text>
+          <View style={[styles.inputWrapper, focused === 'email' && styles.inputWrapperFocused]}>
+            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
+              placeholderTextColor="#555"
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => setFocused('email')}
+              onBlur={() => setFocused(null)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="next"
+              accessibilityLabel="Email address"
+            />
+          </View>
         </View>
 
-        <View style={styles.inputWrapper}>
-          <Ionicons name="lock-closed-outline" size={18} color="#555" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#555"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            textContentType="oneTimeCode"
-          />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Password</Text>
+          <View style={[styles.inputWrapper, focused === 'password' && styles.inputWrapperFocused]}>
+            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Your password"
+              placeholderTextColor="#555"
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => setFocused('password')}
+              onBlur={() => setFocused(null)}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
+              accessibilityLabel="Password"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((v) => !v)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color="#888"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -127,21 +159,22 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG, justifyContent: 'center', padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
 
   logoArea: { alignItems: 'center', marginBottom: 48 },
   logoCircle: {
     width: 80, height: 80, borderRadius: 24,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
     marginBottom: 16,
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5, shadowRadius: 16,
+    ...glow.purpleStrong,
   },
   logoText: { color: '#fff', fontSize: 40, fontWeight: 'bold' },
   appName: { color: '#fff', fontSize: 32, fontWeight: 'bold', marginBottom: 6 },
   tagline: { color: '#555', fontSize: 15 },
 
-  form: { gap: 12 },
+  form: { gap: 14 },
+  field: { gap: 6 },
+  fieldLabel: { color: '#bbb', fontSize: 13, fontWeight: '600', marginLeft: 4 },
 
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -152,34 +185,39 @@ const styles = StyleSheet.create({
 
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: CARD, borderRadius: 14,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
+  },
+  inputWrapperFocused: {
+    borderColor: colors.purple,
+    borderWidth: 1.5,
+    ...glow.purple,
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, color: '#fff', fontSize: 15 },
 
   primaryButton: {
-    backgroundColor: PURPLE, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 4,
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
+    ...glow.purple,
+    ...shadow.sm,
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  divider: { flex: 1, height: 1, backgroundColor: BORDER },
+  divider: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { color: '#555', fontSize: 13 },
 
   googleButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: CARD, borderRadius: 14,
-    height: 52, borderWidth: 1, borderColor: BORDER,
+    gap: 10, backgroundColor: colors.card, borderRadius: 14,
+    height: 52, borderWidth: 1, borderColor: colors.border,
   },
   googleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   switchText: { color: '#555', fontSize: 14 },
-  switchLink: { color: PURPLE_LIGHT, fontSize: 14, fontWeight: '600' },
+  switchLink: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
 });

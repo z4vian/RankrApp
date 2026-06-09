@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.h3,
+    ...typography.tabular,
     color: colors.text,
     marginBottom: 2,
   },

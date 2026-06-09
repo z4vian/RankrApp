@@ -189,7 +189,7 @@ export default function FirstRankScreen() {
           onPress={handleSkip}
           disabled={skipping || creating !== null}
           style={styles.skipBtn}
-          hitSlop={8}
+          hitSlop={12}
         >
           {skipping ? (
             <ActivityIndicator color={colors.textMuted} size="small" />

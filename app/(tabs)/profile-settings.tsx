@@ -1,6 +1,7 @@
 import { useToast } from '@/components';
 import { exportUserData, userDataToJSON } from '@/lib/account';
 import { supabase } from '@/lib/supabase';
+import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -10,12 +11,6 @@ import {
     Modal, Platform, ScrollView, StyleSheet, Text,
     TextInput, TouchableOpacity, View,
 } from 'react-native';
-
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 export default function ProfileSettings() {
   const router = useRouter();
@@ -203,7 +198,7 @@ export default function ProfileSettings() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={PURPLE_LIGHT} />
+        <ActivityIndicator color={colors.purpleLight} />
       </View>
     );
   }
@@ -377,14 +372,14 @@ export default function ProfileSettings() {
             activeOpacity={0.75}
           >
             <View style={[styles.accountIcon, { backgroundColor: '#1e1a2e' }]}>
-              <Ionicons name="cloud-download-outline" size={18} color={PURPLE_LIGHT} />
+              <Ionicons name="cloud-download-outline" size={18} color={colors.purpleLight} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.accountTitle}>Export my data</Text>
               <Text style={styles.accountSub}>Download a JSON copy of everything</Text>
             </View>
             {exporting ? (
-              <ActivityIndicator color={PURPLE_LIGHT} />
+              <ActivityIndicator color={colors.purpleLight} />
             ) : (
               <Ionicons name="chevron-forward" size={18} color="#444" />
             )}
@@ -421,7 +416,12 @@ export default function ProfileSettings() {
         <View style={styles.exportModalContainer}>
           <View style={styles.exportModalHeader}>
             <Text style={styles.exportModalTitle}>Your data</Text>
-            <TouchableOpacity onPress={() => setExportJson(null)} hitSlop={8}>
+            <TouchableOpacity
+              onPress={() => setExportJson(null)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close export"
+            >
               <Ionicons name="close" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -450,50 +450,50 @@ export default function ProfileSettings() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, backgroundColor: BG, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, backgroundColor: BG },
+  loadingContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 60, paddingBottom: 20,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: CARD, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.border,
   },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   avatarSection: { alignItems: 'center', marginBottom: 28 },
   avatarWrapper: { position: 'relative', marginBottom: 8 },
-  avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: PURPLE },
+  avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: colors.purple },
   avatarPlaceholder: {
     width: 100, height: 100, borderRadius: 50,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: PURPLE,
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 3, borderColor: colors.purple,
   },
   avatarInitial: { color: '#fff', fontSize: 40, fontWeight: 'bold' },
   avatarEditBadge: {
     position: 'absolute', bottom: 0, right: 0,
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: BG,
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: colors.bg,
   },
   avatarHint: { color: '#555', fontSize: 13 },
   sectionToggle: {
     flexDirection: 'row', marginHorizontal: 16,
-    backgroundColor: CARD, borderRadius: 12,
-    padding: 4, marginBottom: 24, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 12,
+    padding: 4, marginBottom: 24, borderWidth: 1, borderColor: colors.border,
   },
   toggleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
-  toggleBtnActive: { backgroundColor: PURPLE },
+  toggleBtnActive: { backgroundColor: colors.purple },
   toggleText: { color: '#666', fontSize: 14, fontWeight: '600' },
   toggleTextActive: { color: '#fff' },
   form: { paddingHorizontal: 16, gap: 8 },
-  fieldLabel: { color: '#888', fontSize: 12, fontWeight: '600', letterSpacing: 0.5, marginTop: 8 },
-  fieldHint: { color: '#555', fontSize: 11, marginTop: 2, marginBottom: 4 },
+  fieldLabel: { color: '#888', fontSize: 13, fontWeight: '600', letterSpacing: 0.5, marginTop: 8 },
+  fieldHint: { color: '#777', fontSize: 12, marginTop: 2, marginBottom: 4 },
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: CARD, borderRadius: 14,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
   },
   textAreaWrapper: { height: 90, alignItems: 'flex-start', paddingVertical: 12 },
@@ -504,11 +504,11 @@ const styles = StyleSheet.create({
   disabledWrapper: { backgroundColor: '#111', borderColor: '#1e1e1e' },
   disabledInput: { color: '#444' },
   saveBtn: {
-    backgroundColor: PURPLE, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 16,
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
+    ...glow.purple,
+    ...shadow.sm,
   },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
@@ -520,8 +520,8 @@ const styles = StyleSheet.create({
   },
   accountRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: CARD, borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: colors.border,
   },
   accountRowDestructive: { borderColor: '#3a2020' },
   accountIcon: {
@@ -533,11 +533,11 @@ const styles = StyleSheet.create({
   accountSub: { color: '#666', fontSize: 12 },
 
   // ---- Export-JSON modal ----
-  exportModalContainer: { flex: 1, backgroundColor: BG },
+  exportModalContainer: { flex: 1, backgroundColor: colors.bg },
   exportModalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: BORDER,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   exportModalTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   exportModalScroll: { flex: 1 },
@@ -548,11 +548,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   exportModalActions: {
-    padding: 16, borderTopWidth: 1, borderTopColor: BORDER,
+    padding: 16, borderTopWidth: 1, borderTopColor: colors.border,
   },
   exportCopyBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, backgroundColor: PURPLE, borderRadius: 14, height: 48,
+    gap: 8, backgroundColor: colors.purple, borderRadius: 14, height: 48,
   },
   exportCopyLabel: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

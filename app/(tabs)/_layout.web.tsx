@@ -27,6 +27,7 @@
  * File ownership: web-dev  — do NOT edit _layout.tsx (native/frontend-dev).
  */
 
+import { colors, glow } from '@/lib/theme';
 import { useResponsive } from '@/lib/responsive';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Slot, Tabs, useRouter, useSegments } from 'expo-router';
@@ -42,10 +43,7 @@ import {
 // ---------------------------------------------------------------------------
 // Design tokens (mirror _layout.tsx so both surfaces feel identical)
 // ---------------------------------------------------------------------------
-const PURPLE = '#7C3AED';
-const PURPLE_SOFT = '#7C3AED22';
 const PURPLE_TEXT = '#A78BFA';
-const TAB_BG = '#13131a';
 const SIDEBAR_BG = '#13131a';
 const SIDEBAR_BORDER = '#1e1e2a';
 const INACTIVE = '#444';
@@ -100,7 +98,7 @@ function SidebarItem({
         <Ionicons
           name={focused ? item.iconFocused : item.iconDefault}
           size={20}
-          color={focused ? PURPLE : INACTIVE}
+          color={focused ? colors.purple : INACTIVE}
         />
       </View>
       <Text style={[sidebarStyles.navLabel, focused && sidebarStyles.navLabelActive]}>
@@ -154,7 +152,7 @@ function MobileTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: TAB_BG,
+          backgroundColor: colors.bgDeeper,
           borderTopColor: '#1e1e2a',
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 88 : 70,
@@ -162,7 +160,7 @@ function MobileTabs() {
           paddingTop: 10,
           elevation: 0,
         },
-        tabBarActiveTintColor: PURPLE,
+        tabBarActiveTintColor: colors.purple,
         tabBarInactiveTintColor: INACTIVE,
         tabBarLabelStyle: {
           fontSize: 11,
@@ -408,7 +406,7 @@ const sidebarStyles = StyleSheet.create({
     position: 'relative',
   },
   navItemActive: {
-    backgroundColor: PURPLE_SOFT,
+    backgroundColor: colors.purpleSoft,
   },
   navItemHovered: {
     backgroundColor: '#1e1e2a',
@@ -425,7 +423,7 @@ const sidebarStyles = StyleSheet.create({
     marginRight: 8,
   },
   accentBarActive: {
-    backgroundColor: PURPLE,
+    backgroundColor: colors.purple,
   },
 
   iconWrap: {
@@ -437,7 +435,7 @@ const sidebarStyles = StyleSheet.create({
     marginRight: 10,
   },
   iconWrapActive: {
-    backgroundColor: PURPLE_SOFT,
+    backgroundColor: colors.purpleSoft,
   },
 
   navLabel: {
@@ -472,7 +470,7 @@ const mobileStyles = StyleSheet.create({
     alignItems: 'center',
   },
   activeWrapper: {
-    backgroundColor: PURPLE_SOFT,
+    backgroundColor: colors.purpleSoft,
   },
   searchWrapper: {
     width: 48,
@@ -486,11 +484,8 @@ const mobileStyles = StyleSheet.create({
     marginBottom: 4,
   },
   searchActive: {
-    backgroundColor: PURPLE,
-    borderColor: PURPLE,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
+    backgroundColor: colors.purple,
+    borderColor: colors.purple,
+    ...glow.purpleStrong,
   },
 });

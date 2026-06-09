@@ -2,6 +2,7 @@ import { RAWG_API_KEY } from '@/lib/apiKeys';
 import ComparisonSheet, { RankedItem } from '@/lib/ComparisonSheet';
 import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
+import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,12 +12,6 @@ import {
   ActivityIndicator, Alert, FlatList, Image, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
-
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
 
 type Game = {
   id: number;
@@ -398,7 +393,7 @@ export default function GamesSearch() {
           value={query}
           onChangeText={setQuery}
         />
-        {loading && <ActivityIndicator color={PURPLE_LIGHT} style={{ marginTop: 20 }} />}
+        {loading && <ActivityIndicator color={colors.purpleLight} style={{ marginTop: 20 }} />}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {!loading && query.trim() && results.length === 0 && (
           <Text style={styles.noResults}>No games found.</Text>
@@ -483,7 +478,7 @@ export default function GamesSearch() {
                       setSheetStep('pick_list');
                     }}
                   >
-                    <Ionicons name="bookmark-outline" size={20} color={PURPLE_LIGHT} />
+                    <Ionicons name="bookmark-outline" size={20} color={colors.purpleLight} />
                     <Text style={styles.bookmarkText}>Save for Later</Text>
                   </TouchableOpacity>
                 </>
@@ -509,7 +504,7 @@ export default function GamesSearch() {
                           }
                         }}
                       >
-                        <Ionicons name="list-outline" size={20} color={PURPLE_LIGHT} />
+                        <Ionicons name="list-outline" size={20} color={colors.purpleLight} />
                         <Text style={styles.listOptionText}>{list.title}</Text>
                         <Ionicons name="chevron-forward" size={18} color="#555" />
                       </TouchableOpacity>
@@ -535,7 +530,7 @@ export default function GamesSearch() {
                     numberOfLines={4}
                   />
                   <TouchableOpacity style={styles.photoButton} onPress={handlePickPhoto}>
-                    <Ionicons name="camera-outline" size={20} color={PURPLE_LIGHT} />
+                    <Ionicons name="camera-outline" size={20} color={colors.purpleLight} />
                     <Text style={styles.photoButtonText}>Add Photos</Text>
                   </TouchableOpacity>
                   {photos.length > 0 && (
@@ -566,16 +561,16 @@ export default function GamesSearch() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.bg, padding: 16 },
   input: {
-    backgroundColor: CARD, color: '#fff', borderRadius: 14,
+    backgroundColor: colors.card, color: '#fff', borderRadius: 14,
     padding: 14, fontSize: 15, marginBottom: 16,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
   card: {
     flexDirection: 'row', alignItems: 'center', marginBottom: 12,
-    backgroundColor: CARD, borderRadius: 14,
-    overflow: 'hidden', borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14,
+    overflow: 'hidden', borderWidth: 1, borderColor: colors.border,
   },
   cover: { width: 100, height: 70 },
   noImage: { width: 100, height: 70, backgroundColor: '#111', justifyContent: 'center', alignItems: 'center' },
@@ -587,7 +582,7 @@ const styles = StyleSheet.create({
   sheetContent: { padding: 20, paddingBottom: 40 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
   sheetImage: { width: 80, height: 56, borderRadius: 10 },
-  sheetImagePlaceholder: { width: 80, height: 56, backgroundColor: CARD, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  sheetImagePlaceholder: { width: 80, height: 56, backgroundColor: colors.card, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   sheetTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   sheetSubtitle: { color: '#777', fontSize: 14 },
   sheetQuestion: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
@@ -595,36 +590,36 @@ const styles = StyleSheet.create({
   sentimentButton: { borderRadius: 14, padding: 16, marginBottom: 10 },
   sentimentText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   sentimentRange: { color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 },
-  divider: { height: 1, backgroundColor: BORDER, marginVertical: 16 },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 16 },
   bookmarkButton: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: CARD, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: colors.border,
   },
-  bookmarkText: { color: PURPLE_LIGHT, fontSize: 15, fontWeight: '600' },
+  bookmarkText: { color: colors.purpleLight, fontSize: 15, fontWeight: '600' },
   listOption: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: CARD, borderRadius: 14,
+    backgroundColor: colors.card, borderRadius: 14,
     padding: 16, marginBottom: 10, gap: 12,
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1, borderColor: colors.border,
   },
   listOptionText: { flex: 1, color: '#fff', fontSize: 15 },
   noLists: { color: '#666', textAlign: 'center', marginVertical: 20 },
   backButton: { alignItems: 'center', padding: 12, marginTop: 4 },
-  backButtonText: { color: PURPLE_LIGHT, fontSize: 14 },
+  backButtonText: { color: colors.purpleLight, fontSize: 14 },
   notesInput: {
-    backgroundColor: CARD, color: '#fff', borderRadius: 12, padding: 14,
+    backgroundColor: colors.card, color: '#fff', borderRadius: 12, padding: 14,
     fontSize: 14, textAlignVertical: 'top', minHeight: 100,
-    marginBottom: 16, borderWidth: 1, borderColor: BORDER,
+    marginBottom: 16, borderWidth: 1, borderColor: colors.border,
   },
   photoButton: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: CARD, borderRadius: 12, padding: 14,
-    marginBottom: 16, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 12, padding: 14,
+    marginBottom: 16, borderWidth: 1, borderColor: colors.border,
   },
-  photoButtonText: { color: PURPLE_LIGHT, fontSize: 14 },
+  photoButtonText: { color: colors.purpleLight, fontSize: 14 },
   photoThumb: { width: 80, height: 80, borderRadius: 10, marginRight: 8 },
-  saveButton: { backgroundColor: PURPLE, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 10 },
+  saveButton: { backgroundColor: colors.purple, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 10 },
   saveButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   skipButton: { alignItems: 'center', padding: 10, marginBottom: 8 },
   skipText: { color: '#666', fontSize: 14 },

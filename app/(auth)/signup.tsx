@@ -1,5 +1,6 @@
 import { createProfile, isUsernameAvailable, validateUsername } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
+import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -9,12 +10,6 @@ import {
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 
-const PURPLE = '#7C3AED';
-const PURPLE_LIGHT = '#A78BFA';
-const BG = '#0f0f13';
-const CARD = '#1a1a24';
-const BORDER = '#2a2a38';
-
 WebBrowser.maybeCompleteAuthSession();
 
 type UsernameCheckState =
@@ -22,6 +17,8 @@ type UsernameCheckState =
   | { kind: 'checking' }
   | { kind: 'available' }
   | { kind: 'taken' };
+
+type FocusedField = 'username' | 'email' | 'password' | 'confirm' | null;
 
 export default function Signup() {
   const router = useRouter();
@@ -32,6 +29,8 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState<FocusedField>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -185,18 +184,25 @@ export default function Signup() {
         ) : null}
 
         {/* Username (required) */}
-        <View>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="at-outline" size={18} color="#555" style={styles.inputIcon} />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>
+            Username <Text style={styles.fieldRequired}>*</Text>
+          </Text>
+          <View style={[styles.inputWrapper, focused === 'username' && styles.inputWrapperFocused]}>
+            <Ionicons name="at-outline" size={18} color={focused === 'username' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="username"
               placeholderTextColor="#555"
               value={username}
               onChangeText={(t) => setUsername(t.toLowerCase().trim())}
+              onFocus={() => setFocused('username')}
+              onBlur={() => setFocused(null)}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="username-new"
               textContentType="username"
+              accessibilityLabel="Username"
             />
             {renderUsernameStatus()}
           </View>
@@ -211,43 +217,90 @@ export default function Signup() {
           )}
         </View>
 
-        <View style={styles.inputWrapper}>
-          <Ionicons name="mail-outline" size={18} color="#555" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#555"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>
+            Email <Text style={styles.fieldRequired}>*</Text>
+          </Text>
+          <View style={[styles.inputWrapper, focused === 'email' && styles.inputWrapperFocused]}>
+            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
+              placeholderTextColor="#555"
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => setFocused('email')}
+              onBlur={() => setFocused(null)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              accessibilityLabel="Email address"
+            />
+          </View>
         </View>
 
-        <View style={styles.inputWrapper}>
-          <Ionicons name="lock-closed-outline" size={18} color="#555" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#555"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            textContentType="oneTimeCode"
-          />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>
+            Password <Text style={styles.fieldRequired}>*</Text>
+          </Text>
+          <View style={[styles.inputWrapper, focused === 'password' && styles.inputWrapperFocused]}>
+            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="At least 6 characters"
+              placeholderTextColor="#555"
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => setFocused('password')}
+              onBlur={() => setFocused(null)}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password-new"
+              textContentType="newPassword"
+              accessibilityLabel="Password"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((v) => !v)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color="#888"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={styles.inputWrapper}>
-          <Ionicons name="lock-closed-outline" size={18} color="#555" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            placeholderTextColor="#555"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            textContentType="oneTimeCode"
-          />
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>
+            Confirm Password <Text style={styles.fieldRequired}>*</Text>
+          </Text>
+          <View style={[styles.inputWrapper, focused === 'confirm' && styles.inputWrapperFocused]}>
+            <Ionicons name="lock-closed-outline" size={18} color={focused === 'confirm' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Re-enter password"
+              placeholderTextColor="#555"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              onFocus={() => setFocused('confirm')}
+              onBlur={() => setFocused(null)}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password-new"
+              textContentType="newPassword"
+              returnKeyType="go"
+              onSubmitEditing={handleSignup}
+              accessibilityLabel="Confirm password"
+            />
+          </View>
         </View>
 
         <TouchableOpacity
@@ -283,19 +336,21 @@ export default function Signup() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG, justifyContent: 'center', padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
   logoArea: { alignItems: 'center', marginBottom: 40 },
   logoCircle: {
     width: 72, height: 72, borderRadius: 20,
-    backgroundColor: PURPLE, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
     marginBottom: 14,
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5, shadowRadius: 16,
+    ...glow.purpleStrong,
   },
   logoText: { color: '#fff', fontSize: 36, fontWeight: 'bold' },
   appName: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 6 },
   tagline: { color: '#555', fontSize: 14 },
-  form: { gap: 12 },
+  form: { gap: 14 },
+  field: { gap: 6 },
+  fieldLabel: { color: '#bbb', fontSize: 13, fontWeight: '600', marginLeft: 4 },
+  fieldRequired: { color: '#ef4444' },
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#2a1a1a', borderRadius: 10,
@@ -304,9 +359,14 @@ const styles = StyleSheet.create({
   errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: CARD, borderRadius: 14,
-    borderWidth: 1, borderColor: BORDER,
+    backgroundColor: colors.card, borderRadius: 14,
+    borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
+  },
+  inputWrapperFocused: {
+    borderColor: colors.purple,
+    borderWidth: 1.5,
+    ...glow.purple,
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, color: '#fff', fontSize: 15 },
@@ -314,23 +374,23 @@ const styles = StyleSheet.create({
   fieldHint: { color: '#555', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
   fieldError: { color: '#ef4444', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
   primaryButton: {
-    backgroundColor: PURPLE, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 4,
-    shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
+    ...glow.purple,
+    ...shadow.sm,
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  divider: { flex: 1, height: 1, backgroundColor: BORDER },
+  divider: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { color: '#555', fontSize: 13 },
   googleButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: CARD, borderRadius: 14,
-    height: 52, borderWidth: 1, borderColor: BORDER,
+    gap: 10, backgroundColor: colors.card, borderRadius: 14,
+    height: 52, borderWidth: 1, borderColor: colors.border,
   },
   googleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   switchText: { color: '#555', fontSize: 14 },
-  switchLink: { color: PURPLE_LIGHT, fontSize: 14, fontWeight: '600' },
+  switchLink: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
 });

@@ -11,6 +11,7 @@ import React, {
 import { Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Toast, ToastTone } from './Toast';
+import { useReducedMotion } from '@/lib/a11y';
 import { spacing } from '@/lib/theme';
 
 const DEFAULT_DURATION = 3500;
@@ -39,6 +40,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 /** Provides the toast queue + portal-style stack at the bottom of the screen. Wrap your app root. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const nextId = useRef(0);
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
@@ -56,7 +58,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts(prev => {
       const target = prev.find(t => t.id === id);
       if (!target) return prev;
-      // Animate fade-out, then drop from state.
+      if (reducedMotion) {
+        target.fade.setValue(0);
+        setToasts(curr => curr.filter(t => t.id !== id));
+        return prev;
+      }
       Animated.timing(target.fade, {
         toValue: 0,
         duration: FADE_OUT_MS,
@@ -72,7 +78,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       clearTimeout(t);
       timers.current.delete(id);
     }
-  }, []);
+  }, [reducedMotion]);
 
   const showToast = useCallback(
     (message: string, opts?: ShowToastOptions) => {

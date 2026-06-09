@@ -21,10 +21,13 @@ import {
   type ComposePostAttachedItem,
   type Visibility,
 } from '@/components';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -35,11 +38,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+const DRAFT_KEY = 'rankr:compose:draft';
+const DRAFT_SAVE_DEBOUNCE_MS = 400;
+
 export default function ComposePostScreen() {
   const router = useRouter();
   const { listItemId } = useLocalSearchParams<{ listItemId?: string }>();
 
-  // Body text lives inside ComposePostInput. We own the rest.
   const [visibility, setVisibility] = useState<Visibility>('private');
 
   // The component's `attachedItem` type has no id. We track the id alongside
@@ -47,6 +52,28 @@ export default function ComposePostScreen() {
   const [attached, setAttached] = useState<ComposePostAttachedItem | null>(null);
   const [attachedItemId, setAttachedItemId] = useState<string | null>(null);
   const [attachmentLoading, setAttachmentLoading] = useState(false);
+
+  // Draft autosave — body lives in compose so we can persist it.
+  const [draftLoaded, setDraftLoaded] = useState<string>('');
+  const bodyRef = useRef<string>('');
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load any saved draft on mount.
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(DRAFT_KEY)
+      .then((stored) => {
+        if (cancelled) return;
+        if (stored) {
+          setDraftLoaded(stored);
+          bodyRef.current = stored;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!listItemId) return;
@@ -72,6 +99,26 @@ export default function ComposePostScreen() {
     };
   }, [listItemId]);
 
+  // Debounced persistence whenever the body changes.
+  const handleBodyChange = useCallback((next: string) => {
+    bodyRef.current = next;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      if (next.trim().length === 0) {
+        AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+      } else {
+        AsyncStorage.setItem(DRAFT_KEY, next).catch(() => {});
+      }
+    }, DRAFT_SAVE_DEBOUNCE_MS);
+  }, []);
+
+  // Flush pending writes on unmount.
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
   const handleSubmit = async (body: string) => {
     // ComposePostInput surfaces errors via its own Alert; we just need to
     // succeed (then dismiss) or let the error propagate so the input doesn't
@@ -81,8 +128,35 @@ export default function ComposePostScreen() {
       visibility,
       listItemId: attachedItemId,
     });
+    bodyRef.current = '';
+    await AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     router.back();
   };
+
+  const handleClose = useCallback(() => {
+    const hasDraft = bodyRef.current.trim().length > 0;
+    if (!hasDraft) {
+      router.back();
+      return;
+    }
+    Alert.alert(
+      'Discard draft?',
+      'Your text is saved as a draft and will be restored next time. Or discard now to clear it.',
+      [
+        { text: 'Keep draft', style: 'cancel', onPress: () => router.back() },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+            bodyRef.current = '';
+            router.back();
+          },
+        },
+      ]
+    );
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -93,8 +167,10 @@ export default function ComposePostScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.closeBtn}
-            onPress={() => router.back()}
-            hitSlop={10}
+            onPress={handleClose}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Close compose"
           >
             <Ionicons name="close" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -115,6 +191,8 @@ export default function ComposePostScreen() {
               setAttached(null);
               setAttachedItemId(null);
             }}
+            initialBody={draftLoaded}
+            onBodyChange={handleBodyChange}
           />
 
           {attachmentLoading ? (
