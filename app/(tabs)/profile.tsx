@@ -1,4 +1,4 @@
-import { useToast } from '@/components';
+import { AnimatedNumber, useToast } from '@/components';
 import { getFollowCounts } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
 import { colors, glow, scoreColor } from '@/lib/theme';
@@ -188,22 +188,25 @@ export default function ProfileScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{stats?.totalLists ?? 0}</Text>
+              <AnimatedNumber value={stats?.totalLists ?? 0} style={styles.statValue} />
               <Text style={styles.statLabel}>Lists</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{stats?.totalItems ?? 0}</Text>
+              <AnimatedNumber value={stats?.totalItems ?? 0} style={styles.statValue} />
               <Text style={styles.statLabel}>Items</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={[
-                styles.statValue,
-                stats?.avgScore ? { color: scoreColor(stats.avgScore) } : {}
-              ]}>
-                {stats?.avgScore ?? '—'}
-              </Text>
+              {stats?.avgScore != null ? (
+                <AnimatedNumber
+                  value={Number(stats.avgScore)}
+                  decimals={1}
+                  style={[styles.statValue, { color: scoreColor(Number(stats.avgScore)) }]}
+                />
+              ) : (
+                <Text style={styles.statValue}>—</Text>
+              )}
               <Text style={styles.statLabel}>Avg Score</Text>
             </View>
           </View>
@@ -217,7 +220,7 @@ export default function ProfileScreen() {
               onPress={() => handleFollowListPress('followers')}
               activeOpacity={0.7}
             >
-              <Text style={styles.statValue}>{stats?.followersCount ?? 0}</Text>
+              <AnimatedNumber value={stats?.followersCount ?? 0} style={styles.statValue} />
               <Text style={styles.statLabel}>Followers</Text>
             </TouchableOpacity>
             <View style={styles.statDivider} />
@@ -226,7 +229,7 @@ export default function ProfileScreen() {
               onPress={() => handleFollowListPress('following')}
               activeOpacity={0.7}
             >
-              <Text style={styles.statValue}>{stats?.followingCount ?? 0}</Text>
+              <AnimatedNumber value={stats?.followingCount ?? 0} style={styles.statValue} />
               <Text style={styles.statLabel}>Following</Text>
             </TouchableOpacity>
           </View>

@@ -340,12 +340,30 @@ export default function LandingScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Column 3 — About (placeholders, no links) */}
+          {/* Column 3 — About. Privacy + Terms link into the public legal
+              screens shipped in Session 1. About stays a placeholder until
+              we have a marketing page worth linking to. */}
           <View style={styles.footerCol}>
             <Text style={styles.footerColHeading}>About</Text>
             <Text style={[styles.footerColLink, styles.footerColLinkDisabled]}>About</Text>
-            <Text style={[styles.footerColLink, styles.footerColLinkDisabled]}>Privacy</Text>
-            <Text style={[styles.footerColLink, styles.footerColLinkDisabled]}>Terms</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/privacy' as any)}
+              hitSlop={6}
+              style={styles.footerColItem}
+              accessibilityRole="link"
+              accessibilityLabel="Privacy Policy"
+            >
+              <Text style={styles.footerColLink}>Privacy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/terms' as any)}
+              hitSlop={6}
+              style={styles.footerColItem}
+              accessibilityRole="link"
+              accessibilityLabel="Terms of Service"
+            >
+              <Text style={styles.footerColLink}>Terms</Text>
+            </TouchableOpacity>
           </View>
         </View>
 

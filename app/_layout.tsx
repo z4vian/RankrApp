@@ -19,6 +19,7 @@
  * expo-clipboard.
  */
 
+import { ErrorBoundary } from '@/app/_components/ErrorBoundary';
 import { ToastProvider } from '@/components';
 import { ListProvider } from '@/lib/ListContext';
 import { isOnboardingComplete } from '@/lib/onboarding';
@@ -29,6 +30,32 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+// Pre-beta Session 1 — initialise Sentry at module load (before any
+// component code). Dynamic-required so the bundle still compiles when
+// sentry-expo isn't installed yet (package.json declares it; the user runs
+// `npm install` to materialise it). Same pattern as expo-notifications.
+//
+// `enabled: !!DSN` means the init becomes a no-op when the env var is
+// empty — safe for dev/CI builds without a real DSN.
+(function initSentry() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Sentry = require('sentry-expo');
+    if (!Sentry?.init) return;
+    const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
+    Sentry.init({
+      dsn,
+      enableInExpoDevelopment: false,
+      debug: __DEV__,
+      tracesSampleRate: 0.1,
+      enabled: !!dsn,
+    });
+  } catch {
+    // sentry-expo not installed → swallow. ErrorBoundary's captureException
+    // call is also guarded so the whole crash-reporting path no-ops cleanly.
+  }
+})();
 
 /**
  * Request push permission and register a token for the current session.
@@ -160,26 +187,33 @@ export default function RootLayout() {
   }, [session]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ListProvider>
-        <ToastProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(onboarding)" />
-            <Stack.Screen name="item" />
-            <Stack.Screen name="profile" />
-            <Stack.Screen name="users" />
-            <Stack.Screen name="list-item" />
-            <Stack.Screen name="notifications" />
-            <Stack.Screen name="post" />
-            <Stack.Screen name="year-in-review" />
-            <Stack.Screen name="profile-delete" />
-            <Stack.Screen name="landing" />
-            <Stack.Screen name="discover" />
-          </Stack>
-        </ToastProvider>
-      </ListProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ListProvider>
+          <ToastProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(onboarding)" />
+              <Stack.Screen name="item" />
+              <Stack.Screen name="profile" />
+              <Stack.Screen name="users" />
+              <Stack.Screen name="list-item" />
+              <Stack.Screen name="notifications" />
+              <Stack.Screen name="post" />
+              <Stack.Screen name="year-in-review" />
+              <Stack.Screen name="profile-delete" />
+              <Stack.Screen name="landing" />
+              <Stack.Screen name="discover" />
+              <Stack.Screen name="reset-password" />
+              <Stack.Screen name="privacy" />
+              <Stack.Screen name="terms" />
+              <Stack.Screen name="feedback" />
+              <Stack.Screen name="blocked-users" />
+            </Stack>
+          </ToastProvider>
+        </ListProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

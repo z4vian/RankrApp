@@ -23,12 +23,21 @@ import {
   unfollowUser,
 } from '@/lib/social';
 import {
+  ActionMenu,
   EmptyState,
   LoadingState,
   PostCard,
   ProfileHeader,
   useToast,
+  type ActionMenuItem,
 } from '@/components';
+import {
+  blockUser,
+  isBlocked as checkIsBlocked,
+  submitReport,
+  unblockUser,
+  type ReportReason,
+} from '@/lib/moderation';
 import { colors, radius, spacing, typography } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -36,13 +45,24 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const REPORT_REASONS: { key: ReportReason; label: string }[] = [
+  { key: 'spam', label: 'Spam' },
+  { key: 'harassment', label: 'Harassment' },
+  { key: 'inappropriate', label: 'Inappropriate' },
+  { key: 'impersonation', label: 'Impersonation' },
+  { key: 'illegal', label: 'Illegal' },
+  { key: 'other', label: 'Other' },
+];
 
 /** Stats shape returned by fetchProfileStats — kept local to avoid a re-export. */
 type ProfileStats = {
@@ -74,6 +94,13 @@ export default function PublicProfileScreen() {
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
+  // Session 1 — block/report state.
+  const [isBlockedState, setIsBlockedState] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason>('spam');
+  const [reportBody, setReportBody] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     const found = await fetchProfileByUsername(usernameStr);
@@ -89,18 +116,105 @@ export default function PublicProfileScreen() {
     setCurrentUserId(user?.id ?? null);
     setIsSelf(self);
 
-    const [statsResult, listsResult, postsResult, followingResult] = await Promise.all([
+    const [statsResult, listsResult, postsResult, followingResult, blockedResult] = await Promise.all([
       fetchProfileStats(found.id),
       fetchPublicListsByUserId(found.id),
       getPostsByUser(found.id, 20),
       self ? Promise.resolve(false) : checkIsFollowing(found.id),
+      self ? Promise.resolve(false) : checkIsBlocked(found.id),
     ]);
     setStats(statsResult);
     setLists(listsResult);
     setPosts(postsResult);
     setFollowing(followingResult);
+    setIsBlockedState(blockedResult);
     setLoading(false);
   }, [usernameStr]);
+
+  // Session 1 — block / unblock handlers. Optimistic update; revert on
+  // error. Block routes back to the feed on success (you've just hidden
+  // this person, no reason to keep their profile on screen).
+  const handleBlockToggle = useCallback(() => {
+    if (!profile) return;
+    if (isBlockedState) {
+      // Unblock — simple no-confirm flow.
+      (async () => {
+        const prev = isBlockedState;
+        setIsBlockedState(false);
+        try {
+          await unblockUser(profile.id);
+          showToast('Unblocked', { tone: 'success' });
+        } catch (err: any) {
+          setIsBlockedState(prev);
+          showToast(err?.message ?? 'Could not unblock', { tone: 'error' });
+        }
+      })();
+      return;
+    }
+    // Block — confirm first (destructive).
+    Alert.alert(
+      `Block @${profile.username}?`,
+      "They won't appear in your feed or be able to see your activity.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await blockUser(profile.id);
+              setIsBlockedState(true);
+              showToast(`Blocked @${profile.username}`, { tone: 'success' });
+              // Pop back to feed — no point staying on the now-hidden profile.
+              router.replace('/(tabs)' as any);
+            } catch (err: any) {
+              showToast(err?.message ?? 'Could not block', { tone: 'error' });
+            }
+          },
+        },
+      ],
+    );
+  }, [profile, isBlockedState, router, showToast]);
+
+  // Session 1 — submit report from the modal.
+  const handleSubmitReport = useCallback(async () => {
+    if (!profile) return;
+    setReportSubmitting(true);
+    try {
+      await submitReport({
+        targetKind: 'profile',
+        targetId: profile.id,
+        reason: reportReason,
+        body: reportBody.trim() || undefined,
+      });
+      showToast('Report submitted. Thanks for letting us know.', { tone: 'success' });
+      setReportOpen(false);
+      setReportReason('spam');
+      setReportBody('');
+    } catch (err: any) {
+      showToast(err?.message ?? 'Could not submit report', { tone: 'error' });
+    } finally {
+      setReportSubmitting(false);
+    }
+  }, [profile, reportReason, reportBody, showToast]);
+
+  // ActionMenu items — only meaningful when viewing someone else's profile.
+  const actionMenuItems: ActionMenuItem[] = profile && !isSelf
+    ? [
+        {
+          label: isBlockedState ? `Unblock @${profile.username}` : `Block @${profile.username}`,
+          icon: isBlockedState ? 'person-remove-outline' : 'ban-outline',
+          onPress: handleBlockToggle,
+          destructive: !isBlockedState,
+        },
+        {
+          label: 'Report user',
+          icon: 'flag-outline',
+          onPress: () => setReportOpen(true),
+          destructive: true,
+        },
+      ]
+    : [];
 
   const handleDeletePost = useCallback(
     (postId: string) => {
@@ -214,7 +328,8 @@ export default function PublicProfileScreen() {
 
         {/* Phase 7 — Compare button. Sits directly under ProfileHeader (which
             renders the Follow button inside it), so visually it's adjacent to
-            Follow. Only shown for other users. */}
+            Follow. Session 1 — adds an ActionMenu (Block/Unblock + Report) next
+            to Compare, so all owner-not-self actions live in one row. */}
         {!isSelf ? (
           <View style={styles.compareActionRow}>
             <TouchableOpacity
@@ -225,6 +340,7 @@ export default function PublicProfileScreen() {
               <Ionicons name="git-compare-outline" size={16} color={colors.purpleLight} />
               <Text style={styles.compareBtnText}>Compare with me</Text>
             </TouchableOpacity>
+            <ActionMenu items={actionMenuItems} />
           </View>
         ) : null}
 
@@ -330,6 +446,91 @@ export default function PublicProfileScreen() {
 
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
+
+      {/* Session 1 — Report user modal. Bottom sheet with reason pills + body. */}
+      <Modal
+        visible={reportOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => (reportSubmitting ? undefined : setReportOpen(false))}
+        statusBarTranslucent
+      >
+        <View style={styles.reportBackdrop}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => (reportSubmitting ? undefined : setReportOpen(false))}
+          />
+          <View style={styles.reportSheet}>
+            <Text style={styles.reportTitle}>
+              Report @{profile.username}
+            </Text>
+            <Text style={styles.reportSubtitle}>
+              Pick a reason. Your report stays anonymous to the other user.
+            </Text>
+
+            <View style={styles.reasonGrid}>
+              {REPORT_REASONS.map((r) => {
+                const active = reportReason === r.key;
+                return (
+                  <TouchableOpacity
+                    key={r.key}
+                    onPress={() => setReportReason(r.key)}
+                    activeOpacity={0.7}
+                    style={[styles.reasonPill, active && styles.reasonPillActive]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={r.label}
+                  >
+                    <Text style={[styles.reasonText, active && styles.reasonTextActive]}>
+                      {r.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TextInput
+              value={reportBody}
+              onChangeText={setReportBody}
+              placeholder="Add details (optional)"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={1000}
+              editable={!reportSubmitting}
+              style={styles.reportInput}
+              accessibilityLabel="Report details"
+            />
+
+            <View style={styles.reportFooter}>
+              <TouchableOpacity
+                style={[styles.reportBtn, styles.reportBtnCancel]}
+                onPress={() => setReportOpen(false)}
+                disabled={reportSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
+              >
+                <Text style={styles.reportBtnTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.reportBtn,
+                  styles.reportBtnSubmit,
+                  reportSubmitting && styles.reportBtnSubmitDisabled,
+                ]}
+                onPress={handleSubmitReport}
+                disabled={reportSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Submit report"
+              >
+                <Text style={styles.reportBtnTextSubmit}>
+                  {reportSubmitting ? 'Submitting…' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -433,12 +634,17 @@ const styles = StyleSheet.create({
   },
 
   // Phase 7 — Compare button (sits below ProfileHeader)
+  // Session 1 — laid out as a row so the ActionMenu trigger sits next to it.
   compareActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginTop: -spacing.sm,
     marginBottom: spacing.md,
   },
   compareBtn: {
+    flex: 1,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: colors.purpleSoft,
@@ -448,4 +654,94 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   compareBtnText: { ...typography.bodyBold, color: colors.purpleLight },
+
+  // Session 1 — Report modal
+  reportBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  reportSheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  reportTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  reportSubtitle: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
+  reasonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  reasonPill: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  reasonPillActive: {
+    borderColor: colors.purple,
+    backgroundColor: colors.purpleSoft,
+  },
+  reasonText: {
+    ...typography.small,
+    color: colors.textSecondary,
+  },
+  reasonTextActive: {
+    color: colors.purpleLight,
+    fontWeight: '600',
+  },
+  reportInput: {
+    ...typography.body,
+    color: colors.text,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  reportFooter: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  reportBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportBtnCancel: {
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reportBtnSubmit: {
+    backgroundColor: colors.purple,
+  },
+  reportBtnSubmitDisabled: {
+    opacity: 0.5,
+  },
+  reportBtnTextCancel: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  reportBtnTextSubmit: {
+    ...typography.bodyBold,
+    color: '#fff',
+  },
 });

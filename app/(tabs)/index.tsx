@@ -18,11 +18,12 @@
  */
 
 import { getFeed, type FeedItem } from '@/lib/feed';
+import { getBlockedUserIds } from '@/lib/moderation';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 import { deletePost } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
 import { colors, glow } from '@/lib/theme';
-import { EmptyState, PostCard, PostCardSkeleton, RankedItemCard } from '@/components';
+import { EmptyState, FadeSlideIn, PostCard, PostCardSkeleton, RankedItemCard } from '@/components';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -55,6 +56,18 @@ const createdAtOf = (item: FeedItem): string =>
 const feedItemKey = (item: FeedItem): string =>
   item.kind === 'post' ? `post:${item.post.id}` : item.event.id;
 
+/**
+ * Session 1 — filter blocked users out client-side. Pull the actor id off
+ * either branch and drop the row if it's in the block set.
+ */
+const filterBlocked = (items: FeedItem[], blocked: Set<string>): FeedItem[] => {
+  if (blocked.size === 0) return items;
+  return items.filter((item) => {
+    const actorId = item.kind === 'post' ? item.post.user_id : item.event.user_id;
+    return !blocked.has(actorId);
+  });
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const [username, setUsername] = useState('');
@@ -65,17 +78,23 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [endReached, setEndReached] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  // Session 1 — set of blocked user ids; used to filter actors out of the
+  // feed client-side. Refreshed on every focus along with the feed.
+  const [blockedSet, setBlockedSet] = useState<Set<string>>(new Set());
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
     setEndReached(false);
-    const [{ data: { user } }, fresh] = await Promise.all([
+    const [{ data: { user } }, fresh, blockedIds] = await Promise.all([
       supabase.auth.getUser(),
       getFeed(PAGE_SIZE),
+      getBlockedUserIds(),
     ]);
     setUsername(user?.email?.split('@')[0] ?? '');
     setCurrentUserId(user?.id ?? null);
-    setFeed(fresh);
+    const blocked = new Set(blockedIds);
+    setBlockedSet(blocked);
+    setFeed(filterBlocked(fresh, blocked));
     if (fresh.length < PAGE_SIZE) setEndReached(true);
     setLoading(false);
   }, []);
@@ -89,8 +108,13 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setEndReached(false);
-    const fresh = await getFeed(PAGE_SIZE);
-    setFeed(fresh);
+    const [fresh, blockedIds] = await Promise.all([
+      getFeed(PAGE_SIZE),
+      getBlockedUserIds(),
+    ]);
+    const blocked = new Set(blockedIds);
+    setBlockedSet(blocked);
+    setFeed(filterBlocked(fresh, blocked));
     if (fresh.length < PAGE_SIZE) setEndReached(true);
     setRefreshing(false);
     getUnreadNotificationCount().then(setUnreadCount).catch(() => setUnreadCount(0));
@@ -105,16 +129,20 @@ export default function HomeScreen() {
     if (older.length === 0) {
       setEndReached(true);
     } else {
+      const filteredOlder = filterBlocked(older, blockedSet);
       setFeed((prev) => {
         // Dedup by key in case of overlap at the cursor boundary (a post and
         // a ranking event created at exactly the same timestamp).
         const seen = new Set(prev.map(feedItemKey));
-        return [...prev, ...older.filter((i) => !seen.has(feedItemKey(i)))];
+        return [...prev, ...filteredOlder.filter((i) => !seen.has(feedItemKey(i)))];
       });
+      // End-reached is judged off the raw page size, not the post-filter
+      // count — otherwise a page consisting entirely of blocked actors would
+      // prematurely stop pagination.
       if (older.length < PAGE_SIZE) setEndReached(true);
     }
     setLoadingMore(false);
-  }, [loadingMore, endReached, feed]);
+  }, [loadingMore, endReached, feed, blockedSet]);
 
   const handleDelete = useCallback(
     (postId: string) => {
@@ -181,7 +209,9 @@ export default function HomeScreen() {
       <FlatList
         data={feed}
         keyExtractor={feedItemKey}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
+          // Stagger only the first ~8 items so later items don't feel laggy.
+          const staggerDelay = Math.min(index, 8) * 35;
           if (item.kind === 'post') {
             const post = item.post;
             const isOwn = currentUserId != null && post.user_id === currentUserId;
@@ -189,6 +219,7 @@ export default function HomeScreen() {
               post.author.display_name ?? post.author.username ?? 'user';
             const attachedItemId = post.attached_item?.id ?? null;
             return (
+              <FadeSlideIn delay={staggerDelay}>
               <PostCard
                 avatarUri={post.author.avatar_url}
                 authorName={authorName}
@@ -220,6 +251,7 @@ export default function HomeScreen() {
                 }
                 onDelete={isOwn ? () => handleDelete(post.id) : undefined}
               />
+              </FadeSlideIn>
             );
           }
           // kind === 'ranking'
@@ -227,6 +259,7 @@ export default function HomeScreen() {
           const authorName =
             ev.author.display_name ?? ev.author.username ?? 'user';
           return (
+            <FadeSlideIn delay={staggerDelay}>
             <RankedItemCard
               avatarUri={ev.author.avatar_url}
               authorName={authorName}
@@ -246,6 +279,7 @@ export default function HomeScreen() {
               }
               onPressItem={() => router.push(`/list-item/${ev.list_item.id}` as any)}
             />
+            </FadeSlideIn>
           );
         }}
         ListHeaderComponent={renderHeader}

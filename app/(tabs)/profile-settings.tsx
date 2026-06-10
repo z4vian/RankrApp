@@ -3,6 +3,7 @@ import { exportUserData, userDataToJSON } from '@/lib/account';
 import { supabase } from '@/lib/supabase';
 import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -11,6 +12,14 @@ import {
     Modal, Platform, ScrollView, StyleSheet, Text,
     TextInput, TouchableOpacity, View,
 } from 'react-native';
+
+const APP_VERSION = (Constants.expoConfig?.version as string | undefined) ?? '1.0.0';
+const APP_BUILD =
+  (Platform.OS === 'ios'
+    ? (Constants.expoConfig?.ios?.buildNumber as string | undefined)
+    : Constants.expoConfig?.android?.versionCode != null
+      ? String(Constants.expoConfig.android.versionCode)
+      : undefined) ?? '1';
 
 export default function ProfileSettings() {
   const router = useRouter();
@@ -403,6 +412,90 @@ export default function ProfileSettings() {
           </TouchableOpacity>
         </View>
 
+        {/* ---- Privacy section (Session 1) — blocked users ---- */}
+        <View style={styles.accountSection}>
+          <Text style={styles.accountHeader}>PRIVACY</Text>
+
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => router.push('/blocked-users' as any)}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel="Blocked users"
+          >
+            <View style={[styles.accountIcon, { backgroundColor: '#1e1a2e' }]}>
+              <Ionicons name="ban-outline" size={18} color={colors.purpleLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountTitle}>Blocked users</Text>
+              <Text style={styles.accountSub}>Manage who's hidden from your feed</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#444" />
+          </TouchableOpacity>
+        </View>
+
+        {/* ---- About section — feedback, legal, version ---- */}
+        <View style={styles.accountSection}>
+          <Text style={styles.accountHeader}>ABOUT</Text>
+
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => router.push('/feedback' as any)}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel="Send feedback"
+          >
+            <View style={[styles.accountIcon, { backgroundColor: '#1e1a2e' }]}>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.purpleLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountTitle}>Send feedback</Text>
+              <Text style={styles.accountSub}>Tell us what to fix or build next</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#444" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => router.push('/privacy' as any)}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy policy"
+          >
+            <View style={[styles.accountIcon, { backgroundColor: '#1e1a2e' }]}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.purpleLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountTitle}>Privacy Policy</Text>
+              <Text style={styles.accountSub}>How we handle your data</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#444" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => router.push('/terms' as any)}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel="Terms of service"
+          >
+            <View style={[styles.accountIcon, { backgroundColor: '#1e1a2e' }]}>
+              <Ionicons name="document-text-outline" size={18} color={colors.purpleLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountTitle}>Terms of Service</Text>
+              <Text style={styles.accountSub}>Rules of the road</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#444" />
+          </TouchableOpacity>
+
+          <View style={styles.versionRow}>
+            <Text style={styles.versionText}>
+              Rankr v{APP_VERSION} ({APP_BUILD})
+            </Text>
+          </View>
+        </View>
+
         <View style={{ height: 60 }} />
       </ScrollView>
 
@@ -531,6 +624,15 @@ const styles = StyleSheet.create({
   accountTitle: { color: '#fff', fontSize: 14, fontWeight: '600', marginBottom: 2 },
   accountTitleDestructive: { color: '#ef4444' },
   accountSub: { color: '#666', fontSize: 12 },
+  versionRow: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  versionText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+  },
 
   // ---- Export-JSON modal ----
   exportModalContainer: { flex: 1, backgroundColor: colors.bg },

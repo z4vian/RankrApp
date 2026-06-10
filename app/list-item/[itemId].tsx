@@ -28,6 +28,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { colors, radius, scoreColor, spacing, typography } from '@/lib/theme';
 import {
+  ActionMenu,
   CommentBubble,
   CommentInput,
   EmptyState,
@@ -36,8 +37,10 @@ import {
   UserRow,
   UserTagPicker,
   useToast,
+  type ActionMenuItem,
   type TaggableUser,
 } from '@/components';
+import { submitReport, type ReportReason } from '@/lib/moderation';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -48,10 +51,20 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const REPORT_REASONS: { key: ReportReason; label: string }[] = [
+  { key: 'spam', label: 'Spam' },
+  { key: 'harassment', label: 'Harassment' },
+  { key: 'inappropriate', label: 'Inappropriate' },
+  { key: 'impersonation', label: 'Impersonation' },
+  { key: 'illegal', label: 'Illegal' },
+  { key: 'other', label: 'Other' },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,6 +103,12 @@ export default function ListItemDetailScreen() {
   // Modal state
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [watchedSheetOpen, setWatchedSheetOpen] = useState(false);
+
+  // Session 1 — report-item state.
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason>('spam');
+  const [reportBody, setReportBody] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // -------------------------------------------------------------------------
   // Data loading
@@ -226,6 +245,28 @@ export default function ListItemDetailScreen() {
     [detail, watchedWith],
   );
 
+  // Session 1 — submit report against the list item.
+  const handleSubmitReport = useCallback(async () => {
+    if (!detail) return;
+    setReportSubmitting(true);
+    try {
+      await submitReport({
+        targetKind: 'list_item',
+        targetId: detail.id,
+        reason: reportReason,
+        body: reportBody.trim() || undefined,
+      });
+      showToast('Report submitted. Thanks for letting us know.', { tone: 'success' });
+      setReportOpen(false);
+      setReportReason('spam');
+      setReportBody('');
+    } catch (err: any) {
+      showToast(err?.message ?? 'Could not submit report', { tone: 'error' });
+    } finally {
+      setReportSubmitting(false);
+    }
+  }, [detail, reportReason, reportBody, showToast]);
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -263,9 +304,26 @@ export default function ListItemDetailScreen() {
     ...(currentUserId ? [currentUserId] : []),
   ];
 
+  // Session 1 — owner-not-self ActionMenu (Report item).
+  const reportMenuItems: ActionMenuItem[] = !isOwner && currentUserId
+    ? [
+        {
+          label: 'Report item',
+          icon: 'flag-outline',
+          onPress: () => setReportOpen(true),
+          destructive: true,
+        },
+      ]
+    : [];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackButton onPress={() => router.back()} />
+      {reportMenuItems.length > 0 ? (
+        <View style={styles.topRightAction}>
+          <ActionMenu items={reportMenuItems} />
+        </View>
+      ) : null}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
@@ -614,6 +672,89 @@ export default function ListItemDetailScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* ----- Session 1 — Report item modal ----- */}
+      <Modal
+        visible={reportOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => (reportSubmitting ? undefined : setReportOpen(false))}
+        statusBarTranslucent
+      >
+        <View style={styles.reportBackdrop}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => (reportSubmitting ? undefined : setReportOpen(false))}
+          />
+          <View style={styles.reportSheet}>
+            <Text style={styles.reportTitle}>Report this item</Text>
+            <Text style={styles.reportSubtitle}>
+              Pick a reason. Your report stays anonymous to the list owner.
+            </Text>
+
+            <View style={styles.reasonGrid}>
+              {REPORT_REASONS.map((r) => {
+                const active = reportReason === r.key;
+                return (
+                  <TouchableOpacity
+                    key={r.key}
+                    onPress={() => setReportReason(r.key)}
+                    activeOpacity={0.7}
+                    style={[styles.reasonPill, active && styles.reasonPillActive]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={r.label}
+                  >
+                    <Text style={[styles.reasonText, active && styles.reasonTextActive]}>
+                      {r.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TextInput
+              value={reportBody}
+              onChangeText={setReportBody}
+              placeholder="Add details (optional)"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={1000}
+              editable={!reportSubmitting}
+              style={styles.reportInput}
+              accessibilityLabel="Report details"
+            />
+
+            <View style={styles.reportFooter}>
+              <TouchableOpacity
+                style={[styles.reportBtn, styles.reportBtnCancel]}
+                onPress={() => setReportOpen(false)}
+                disabled={reportSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
+              >
+                <Text style={styles.reportBtnTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.reportBtn,
+                  styles.reportBtnSubmit,
+                  reportSubmitting && styles.reportBtnSubmitDisabled,
+                ]}
+                onPress={handleSubmitReport}
+                disabled={reportSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Submit report"
+              >
+                <Text style={styles.reportBtnTextSubmit}>
+                  {reportSubmitting ? 'Submitting…' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -850,5 +991,103 @@ const styles = StyleSheet.create({
   },
   untagBtn: {
     padding: 4,
+  },
+
+  // Session 1 — top-right ActionMenu trigger (mirrors BackButton position).
+  topRightAction: {
+    position: 'absolute',
+    top: spacing.xxl + 8,
+    right: spacing.lg,
+    zIndex: 10,
+  },
+
+  // Session 1 — Report modal styles
+  reportBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  reportSheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  reportTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  reportSubtitle: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
+  reasonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  reasonPill: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  reasonPillActive: {
+    borderColor: colors.purple,
+    backgroundColor: colors.purpleSoft,
+  },
+  reasonText: {
+    ...typography.small,
+    color: colors.textSecondary,
+  },
+  reasonTextActive: {
+    color: colors.purpleLight,
+    fontWeight: '600',
+  },
+  reportInput: {
+    ...typography.body,
+    color: colors.text,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  reportFooter: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  reportBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportBtnCancel: {
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reportBtnSubmit: {
+    backgroundColor: colors.purple,
+  },
+  reportBtnSubmitDisabled: {
+    opacity: 0.5,
+  },
+  reportBtnTextCancel: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  reportBtnTextSubmit: {
+    ...typography.bodyBold,
+    color: '#fff',
   },
 });

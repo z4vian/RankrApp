@@ -1,3 +1,9 @@
+export { ActionMenu } from './ActionMenu';
+export type { ActionMenuItem, ActionMenuProps } from './ActionMenu';
+
+export { AnimatedNumber } from './AnimatedNumber';
+export type { AnimatedNumberProps } from './AnimatedNumber';
+
 export { Avatar } from './Avatar';
 export type { AvatarProps } from './Avatar';
 
@@ -19,11 +25,29 @@ export type { EmptyStateProps } from './EmptyState';
 export { EngagementBar } from './EngagementBar';
 export type { EngagementBarProps } from './EngagementBar';
 
+export { ErrorBoundary } from './ErrorBoundary';
+
+export { ErrorScreen } from './ErrorScreen';
+export type { ErrorScreenProps } from './ErrorScreen';
+
+export { FadeSlideIn } from './FadeSlideIn';
+export type { FadeSlideInProps } from './FadeSlideIn';
+
+export { FeedbackForm } from './FeedbackForm';
+export type {
+  FeedbackCategory,
+  FeedbackFormProps,
+  FeedbackFormSubmitInput,
+} from './FeedbackForm';
+
 export { FollowButton } from './FollowButton';
 export type { FollowButtonProps } from './FollowButton';
 
 export { InsightSection } from './InsightSection';
 export type { InsightSectionProps } from './InsightSection';
+
+export { LegalDocument } from './LegalDocument';
+export type { LegalDocumentProps, LegalSection } from './LegalDocument';
 
 export { LikeButton } from './LikeButton';
 export type { LikeButtonProps } from './LikeButton';

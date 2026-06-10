@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { useReducedMotion } from '@/lib/a11y';
 import { colors, spacing, typography } from '@/lib/theme';
+
+const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
 export interface LikeButtonProps {
   liked: boolean;
@@ -40,7 +42,22 @@ export function LikeButton({
   style,
 }: LikeButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
+  const fill = useRef(new Animated.Value(liked ? 1 : 0)).current;
   const reducedMotion = useReducedMotion();
+
+  // Smoothly crossfade the filled heart on top of the outlined one whenever
+  // the `liked` prop changes (e.g. parent toggles after async confirm).
+  useEffect(() => {
+    if (reducedMotion) {
+      fill.setValue(liked ? 1 : 0);
+      return;
+    }
+    Animated.timing(fill, {
+      toValue: liked ? 1 : 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [liked, reducedMotion, fill]);
 
   const handlePress = () => {
     if (!reducedMotion) {
@@ -68,7 +85,6 @@ export function LikeButton({
 
   const iconSize = size === 'sm' ? 16 : 22;
   const textStyle = size === 'sm' ? typography.caption : typography.body;
-  const iconColor = liked ? colors.error : colors.textSecondary;
 
   return (
     <TouchableOpacity
@@ -86,11 +102,21 @@ export function LikeButton({
           <ActivityIndicator color={colors.purpleLight} size="small" />
         </View>
       ) : (
-        <Animated.View style={{ transform: [{ scale }] }}>
+        <Animated.View style={{ transform: [{ scale }], width: iconSize, height: iconSize }}>
+          {/* Outlined heart sits underneath — always visible.
+              Filled heart is layered on top with animated opacity that
+              tracks the `liked` prop, giving a smooth crossfade. */}
           <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
+            name="heart-outline"
             size={iconSize}
-            color={iconColor}
+            color={colors.textSecondary}
+            style={StyleSheet.absoluteFill}
+          />
+          <AnimatedIonicon
+            name="heart"
+            size={iconSize}
+            color={colors.error}
+            style={[StyleSheet.absoluteFill, { opacity: fill }]}
           />
         </Animated.View>
       )}

@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, spacing, typography } from '@/lib/theme';
+import { colors, spacing, tabular, typography } from '@/lib/theme';
 
 export interface StatPillProps {
   value: number | string;
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.h3,
-    ...typography.tabular,
+    ...tabular,
     color: colors.text,
     marginBottom: 2,
   },

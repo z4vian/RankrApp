@@ -1,7 +1,9 @@
+import { useReducedMotion } from '@/lib/a11y';
 import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export type RankedItem = {
   id: string;
@@ -26,6 +28,39 @@ export default function ComparisonSheet({
   onChooseExisting,
   onDismiss,
 }: Props) {
+  const reducedMotion = useReducedMotion();
+  const backdropOpacity = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
+  const cardScale = useRef(new Animated.Value(reducedMotion ? 1 : 0.92)).current;
+  const cardOpacity = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (!newItem || !compareItem) return;
+    if (reducedMotion) {
+      backdropOpacity.setValue(1);
+      cardScale.setValue(1);
+      cardOpacity.setValue(1);
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        bounciness: 6,
+        speed: 14,
+      }),
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [newItem, compareItem, reducedMotion, backdropOpacity, cardScale, cardOpacity]);
+
   if (!newItem || !compareItem) return null;
 
   const choose = (which: 'new' | 'existing') => {
@@ -35,8 +70,8 @@ export default function ComparisonSheet({
   };
 
   return (
-    <View style={styles.overlay}>
-      <View style={styles.card}>
+    <Animated.View style={[styles.overlay, { opacity: backdropOpacity }]}>
+      <Animated.View style={[styles.card, { opacity: cardOpacity, transform: [{ scale: cardScale }] }]}>
         <Text style={styles.title}>Which do you prefer?</Text>
         <Text style={styles.hint}>Tap the one you like more</Text>
 
@@ -90,8 +125,8 @@ export default function ComparisonSheet({
         >
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 

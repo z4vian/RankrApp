@@ -1,4 +1,4 @@
-import { useToast } from '@/components';
+import { AnimatedNumber, useToast } from '@/components';
 import { useActiveList } from '@/lib/ListContext';
 import { uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
@@ -516,19 +516,25 @@ export default function ListDetail() {
                 {/* Stats */}
                 <View style={styles.statsBar}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{allRankableItems.length}</Text>
+                    <AnimatedNumber value={allRankableItems.length} style={styles.statValue} />
                     <Text style={styles.statLabel}>Items</Text>
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.statItem}>
-                    <Text style={[styles.statValue, avgScore ? { color: scoreColor(parseFloat(avgScore)) } : {}]}>
-                      {avgScore ?? '—'}
-                    </Text>
+                    {avgScore ? (
+                      <AnimatedNumber
+                        value={parseFloat(avgScore)}
+                        decimals={1}
+                        style={[styles.statValue, { color: scoreColor(parseFloat(avgScore)) }]}
+                      />
+                    ) : (
+                      <Text style={styles.statValue}>—</Text>
+                    )}
                     <Text style={styles.statLabel}>Avg Score</Text>
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{bookmarkedItems.length}</Text>
+                    <AnimatedNumber value={bookmarkedItems.length} style={styles.statValue} />
                     <Text style={styles.statLabel}>Saved</Text>
                   </View>
                 </View>

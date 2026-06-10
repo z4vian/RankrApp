@@ -37,6 +37,8 @@ import {
 } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   FlatList,
   RefreshControl,
   ScrollView,
@@ -90,6 +92,70 @@ function imageHeightFor(category: string): number {
   // fall through to the music (1:1) aspect.
   const aspect = (ASPECT as Record<string, number>)[category] ?? ASPECT.music;
   return Math.round(H_CARD_W / aspect);
+}
+
+// ---------------------------------------------------------------------------
+// AnimatedTabPill — smoothly cross-fades background + border + icon + label
+// between inactive and active states (180ms ease). Keeps the visual identity
+// of the snap-to-active pill but feels less abrupt on category change.
+// ---------------------------------------------------------------------------
+
+type AnimatedTabPillProps = {
+  active: boolean;
+  label: string;
+  icon: 'film' | 'tv' | 'game-controller' | 'musical-notes' | 'book';
+  onPress: () => void;
+};
+
+function AnimatedTabPill({ active, label, icon, onPress }: AnimatedTabPillProps) {
+  const progress = useRef(new Animated.Value(active ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: active ? 1 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // we're interpolating colors
+    }).start();
+  }, [active, progress]);
+
+  const backgroundColor = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [INACTIVE_TAB, colors.cardElevated],
+  });
+  const borderColor = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.border, colors.purple],
+  });
+  const labelColor = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#666', colors.text],
+  });
+  // Icon color can't be animated via the standard Ionicons color prop, so we
+  // just hard-swap. The label/background tween already carries the transition.
+  const iconColor = active ? colors.purpleLight : '#666';
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+    >
+      <Animated.View
+        style={[
+          styles.tabPill,
+          { backgroundColor, borderColor },
+        ]}
+      >
+        <Ionicons name={icon} size={14} color={iconColor} style={{ marginRight: 5 }} />
+        <Animated.Text style={[styles.tabLabel, { color: labelColor }]}>
+          {label}
+        </Animated.Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -439,33 +505,15 @@ export default function RecommendationsScreen() {
         contentContainerStyle={styles.tabRow}
         style={styles.tabScroll}
       >
-        {TABS.map((tab) => {
-          const active = tab.key === activeCategory;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={[
-                styles.tabPill,
-                active ? styles.tabPillActive : styles.tabPillInactive,
-              ]}
-              onPress={() => handleSelectCategory(tab.key)}
-              activeOpacity={0.8}
-              accessibilityRole="tab"
-              accessibilityLabel={tab.label}
-              accessibilityState={{ selected: active }}
-            >
-              <Ionicons
-                name={tab.icon}
-                size={14}
-                color={active ? colors.purpleLight : '#666'}
-                style={{ marginRight: 5 }}
-              />
-              <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {TABS.map((tab) => (
+          <AnimatedTabPill
+            key={tab.key}
+            active={tab.key === activeCategory}
+            label={tab.label}
+            icon={tab.icon}
+            onPress={() => handleSelectCategory(tab.key)}
+          />
+        ))}
       </ScrollView>
 
       {/* Feed — mount tabs only after first visit so state/cache persists on

@@ -1,4 +1,4 @@
-import { ListCardSkeleton, PressableCard } from '@/components';
+import { FadeSlideIn, ListCardSkeleton, PressableCard } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -115,7 +115,8 @@ export default function ListsScreen() {
     </TouchableOpacity>
   );
 
-  const renderList = ({ item }: { item: List }) => (
+  const renderList = ({ item, index }: { item: List; index: number }) => (
+    <FadeSlideIn delay={Math.min(index, 6) * 40}>
     <Swipeable renderRightActions={() => renderRightActions(item)}>
       <PressableCard
         style={styles.card}
@@ -160,6 +161,7 @@ export default function ListsScreen() {
         </View>
       </PressableCard>
     </Swipeable>
+    </FadeSlideIn>
   );
 
   return (

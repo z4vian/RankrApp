@@ -104,10 +104,17 @@ export const typography = {
   small: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
   caption: { fontSize: 13, fontWeight: '500' as const, lineHeight: 17 },
   micro: { fontSize: 12, fontWeight: '700' as const, lineHeight: 16, letterSpacing: 1.5 },
-  // Numeric: monospaced figures so digits don't jiggle when values change.
-  // Spread alongside another preset, e.g. `{...typography.body, ...typography.tabular}`.
-  tabular: { fontVariant: ['tabular-nums' as const] },
 } as const;
+
+/**
+ * Numeric: monospaced figures so digits don't jiggle when values change.
+ * Spread into a Text style: `{ ...typography.body, ...tabular }`.
+ *
+ * Kept outside the typography `as const` block so the inner array stays
+ * mutable — react-native's TextStyle expects a mutable `FontVariant[]`.
+ */
+import type { TextStyle } from 'react-native';
+export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
 /**
  * Elevation shadows — BLACK based for genuine depth on dark surfaces.

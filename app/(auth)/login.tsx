@@ -135,6 +135,16 @@ export default function Login() {
           )}
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.forgotRow}
+          onPress={() => router.push('/forgot-password' as any)}
+          hitSlop={12}
+          accessibilityRole="link"
+          accessibilityLabel="Forgot password"
+        >
+          <Text style={styles.forgotText}>Forgot password?</Text>
+        </TouchableOpacity>
+
         <View style={styles.dividerRow}>
           <View style={styles.divider} />
           <Text style={styles.dividerText}>or</Text>
@@ -153,6 +163,30 @@ export default function Login() {
           <Text style={styles.switchText}>Don&apos;t have an account? </Text>
           <Text style={styles.switchLink}>Sign up</Text>
         </TouchableOpacity>
+
+        {/* Session 1 — legal footer. Tappable links into the public Privacy
+            and Terms screens (no auth required). */}
+        <View style={styles.legalRow}>
+          <Text style={styles.legalText}>By continuing you agree to our </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/terms' as any)}
+            hitSlop={6}
+            accessibilityRole="link"
+            accessibilityLabel="Terms of Service"
+          >
+            <Text style={styles.legalLink}>Terms</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalText}> and </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/privacy' as any)}
+            hitSlop={6}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy Policy"
+          >
+            <Text style={styles.legalLink}>Privacy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalText}>.</Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -205,6 +239,8 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  forgotRow: { alignItems: 'center', paddingVertical: 4 },
+  forgotText: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   divider: { flex: 1, height: 1, backgroundColor: colors.border },
@@ -220,4 +256,14 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   switchText: { color: '#555', fontSize: 14 },
   switchLink: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
+
+  legalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  legalText: { color: '#666', fontSize: 12 },
+  legalLink: { color: colors.purpleLight, fontSize: 12, fontWeight: '600' },
 });

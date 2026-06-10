@@ -376,6 +376,30 @@ export default function Signup() {
           <Text style={styles.switchText}>Already have an account? </Text>
           <Text style={styles.switchLink}>Log in</Text>
         </TouchableOpacity>
+
+        {/* Session 1 — legal footer. By creating an account, the user is
+            explicitly agreeing — same wording as Letterboxd's signup. */}
+        <View style={styles.legalRow}>
+          <Text style={styles.legalText}>By creating an account you agree to our </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/terms' as any)}
+            hitSlop={6}
+            accessibilityRole="link"
+            accessibilityLabel="Terms of Service"
+          >
+            <Text style={styles.legalLink}>Terms</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalText}> and </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/privacy' as any)}
+            hitSlop={6}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy Policy"
+          >
+            <Text style={styles.legalLink}>Privacy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalText}>.</Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -445,4 +469,14 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
   switchText: { color: '#555', fontSize: 14 },
   switchLink: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
+
+  legalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  legalText: { color: '#666', fontSize: 12 },
+  legalLink: { color: colors.purpleLight, fontSize: 12, fontWeight: '600' },
 });

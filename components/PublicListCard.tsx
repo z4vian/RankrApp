@@ -9,6 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Avatar } from './Avatar';
+import { PressableCard } from './PressableCard';
 import { categoryIcon } from './_categoryIcon';
 import { colors, radius, spacing, typography } from '@/lib/theme';
 
@@ -91,9 +92,12 @@ export function PublicListCard({
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+      <PressableCard
+        onPress={onPress}
+        accessibilityLabel={`Open public list ${title}`}
+      >
         {card}
-      </TouchableOpacity>
+      </PressableCard>
     );
   }
   return card;
