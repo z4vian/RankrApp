@@ -40,6 +40,20 @@ const USERNAME_MIN = 3;
 const USERNAME_MAX = 20;
 
 /**
+ * Reserved usernames that users cannot claim. Mostly route-collision avoidance
+ * and brand protection. Compared case-insensitively against the input.
+ */
+const RESERVED_USERNAMES = new Set<string>([
+  'admin', 'administrator', 'root', 'mod', 'moderator', 'support', 'help',
+  'api', 'login', 'logout', 'signup', 'signin', 'register', 'settings',
+  'profile', 'profiles', 'about', 'privacy', 'terms', 'tos', 'legal',
+  'www', 'mail', 'email', 'official', 'staff', 'team', 'rankr', 'rank',
+  'home', 'feed', 'discover', 'search', 'notifications', 'lists', 'list',
+  'item', 'items', 'post', 'posts', 'user', 'users', 'me', 'you',
+  'null', 'undefined', 'system',
+]);
+
+/**
  * Validate a username string. Returns `null` if valid, or a user-facing error
  * message if invalid. Frontend reuses this for live form validation; the same
  * function is called inside `createProfile` as a defensive check before
@@ -48,7 +62,9 @@ const USERNAME_MAX = 20;
  * Rules:
  *   - 3–20 characters
  *   - lowercase letters, digits, underscore only
- *   - no leading/trailing whitespace (whitespace is rejected as an invalid character)
+ *   - must start with a letter or underscore (no leading digit — easier to
+ *     parse mentally and avoids @1 / @0 confusing routes)
+ *   - not on the reserved-names blocklist (route collisions, brand protection)
  */
 export function validateUsername(name: string): string | null {
   if (typeof name !== 'string' || name.length === 0) {
@@ -63,6 +79,121 @@ export function validateUsername(name: string): string | null {
   if (!USERNAME_REGEX.test(name)) {
     return 'Username can only contain lowercase letters, numbers, and underscores.';
   }
+  if (/^[0-9]/.test(name)) {
+    return 'Username must start with a letter or underscore.';
+  }
+  if (RESERVED_USERNAMES.has(name.toLowerCase())) {
+    return 'That username is reserved. Please choose another.';
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Email validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Simplified RFC-5322-style email check. Strict enough to catch the obvious
+ * typos ("alice", "alice@", "alice@example") but lenient enough to accept
+ * the wide variety of valid addresses (subdomains, +tags, etc.).
+ *
+ * Returns `null` if valid, user-facing error string otherwise.
+ */
+export function validateEmail(email: string): string | null {
+  if (typeof email !== 'string' || email.trim().length === 0) {
+    return 'Email is required.';
+  }
+  const trimmed = email.trim();
+  if (trimmed.length > 254) {
+    return 'Email is too long.';
+  }
+  // Local + @ + domain with at least one dot. No whitespace anywhere.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return 'Please enter a valid email address.';
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Password validation
+// ---------------------------------------------------------------------------
+
+const PASSWORD_MIN = 8;
+// Supabase Auth uses bcrypt, which only hashes the first 72 bytes of the
+// password. Anything beyond is silently truncated, which makes "long pass"
+// security false. Cap input length to match.
+const PASSWORD_MAX = 72;
+
+/**
+ * Discrete rule checks for the live password indicator on the signup form.
+ * Each property is true when the rule is satisfied. The frontend renders
+ * these as a checklist with ✓ / ✗ marks so the user can see what's missing
+ * as they type.
+ */
+export type PasswordRuleChecks = {
+  length: boolean;              // 8 <= length <= 72
+  hasLetter: boolean;           // contains [A-Za-z]
+  hasNumber: boolean;           // contains [0-9]
+  notSameAsIdentity: boolean;   // not equal (case-insensitive) to username or email local-part
+};
+
+/**
+ * Run the discrete password rule checks. Pure — no I/O.
+ *
+ * @param password  The candidate password.
+ * @param opts.username  Current username field value, for the no-identity rule.
+ * @param opts.email     Current email field value, for the no-identity rule.
+ */
+export function passwordRuleChecks(
+  password: string,
+  opts?: { username?: string; email?: string }
+): PasswordRuleChecks {
+  const len = password.length;
+  const length = len >= PASSWORD_MIN && len <= PASSWORD_MAX;
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+
+  const pwLower = password.toLowerCase();
+  const username = (opts?.username ?? '').toLowerCase();
+  const emailLocal = (opts?.email ?? '').toLowerCase().split('@')[0] ?? '';
+  const matchesUsername = username.length > 0 && pwLower === username;
+  const matchesEmailLocal = emailLocal.length > 0 && pwLower === emailLocal;
+  const notSameAsIdentity = !matchesUsername && !matchesEmailLocal;
+
+  return { length, hasLetter, hasNumber, notSameAsIdentity };
+}
+
+/**
+ * Validate a password against the common-regulations ruleset. Returns `null`
+ * if valid, or the first user-facing error message if any rule fails.
+ *
+ * Rules:
+ *   - 8–72 characters (Supabase bcrypt cap is 72 bytes)
+ *   - At least one letter
+ *   - At least one number
+ *   - Not equal to the username or the email's local-part
+ *
+ * Note: this is CLIENT-SIDE only. For real enforcement, also configure
+ * Supabase Auth's server-side password policy in Dashboard → Authentication
+ * → Policies → Password Requirements.
+ */
+export function validatePassword(
+  password: string,
+  opts?: { username?: string; email?: string }
+): string | null {
+  if (typeof password !== 'string' || password.length === 0) {
+    return 'Password is required.';
+  }
+  const checks = passwordRuleChecks(password, opts);
+  if (!checks.length) {
+    if (password.length < PASSWORD_MIN) {
+      return `Password must be at least ${PASSWORD_MIN} characters.`;
+    }
+    return `Password must be at most ${PASSWORD_MAX} characters.`;
+  }
+  if (!checks.hasLetter) return 'Password must contain at least one letter.';
+  if (!checks.hasNumber) return 'Password must contain at least one number.';
+  if (!checks.notSameAsIdentity) return 'Password cannot be the same as your username or email.';
   return null;
 }
 

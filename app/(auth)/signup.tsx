@@ -1,4 +1,11 @@
-import { createProfile, isUsernameAvailable, validateUsername } from '@/lib/profile';
+import {
+  createProfile,
+  isUsernameAvailable,
+  passwordRuleChecks,
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
 import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -75,7 +82,19 @@ export default function Signup() {
       setUsernameError(usernameValidation);
       return;
     }
-    // 2. Existing password validation
+    // 2. Email validation
+    const emailValidation = validateEmail(email);
+    if (emailValidation) {
+      setError(emailValidation);
+      return;
+    }
+    // 3. Password validation (length, letter, number, not-same-as-identity)
+    const passwordValidation = validatePassword(password, { username, email });
+    if (passwordValidation) {
+      setError(passwordValidation);
+      return;
+    }
+    // 4. Confirm matches
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -249,7 +268,7 @@ export default function Signup() {
             <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters, 1 letter, 1 number"
               placeholderTextColor="#555"
               value={password}
               onChangeText={setPassword}
@@ -275,6 +294,33 @@ export default function Signup() {
               />
             </TouchableOpacity>
           </View>
+          {/* Live password rule checklist — only renders once the user has
+              started typing so the form isn't littered with red X's on mount. */}
+          {password.length > 0 ? (() => {
+            const checks = passwordRuleChecks(password, { username, email });
+            const rules: { ok: boolean; label: string }[] = [
+              { ok: checks.length, label: 'At least 8 characters' },
+              { ok: checks.hasLetter, label: 'Contains a letter' },
+              { ok: checks.hasNumber, label: 'Contains a number' },
+              { ok: checks.notSameAsIdentity, label: "Different from your username and email" },
+            ];
+            return (
+              <View style={styles.pwRules}>
+                {rules.map((r) => (
+                  <View key={r.label} style={styles.pwRuleRow}>
+                    <Ionicons
+                      name={r.ok ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={13}
+                      color={r.ok ? '#22c55e' : '#555'}
+                    />
+                    <Text style={[styles.pwRuleText, r.ok && styles.pwRuleTextOk]}>
+                      {r.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })() : null}
         </View>
 
         <View style={styles.field}>
@@ -373,6 +419,12 @@ const styles = StyleSheet.create({
   usernameStatusIcon: { marginLeft: 8 },
   fieldHint: { color: '#555', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
   fieldError: { color: '#ef4444', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
+
+  // Password rule checklist (lives under the password input)
+  pwRules: { marginTop: 8, marginLeft: 4, gap: 4 },
+  pwRuleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pwRuleText: { color: '#777', fontSize: 12 },
+  pwRuleTextOk: { color: '#22c55e' },
   primaryButton: {
     backgroundColor: colors.purple, borderRadius: 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
