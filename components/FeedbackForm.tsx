@@ -1,7 +1,8 @@
+import { ConsentCheck } from './ConsentCheck';
+import { Link } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useMemo, useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StyleProp,
   StyleSheet,
@@ -53,6 +54,9 @@ export function FeedbackForm({
   );
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [techExpanded, setTechExpanded] = useState(false);
 
   const trimmed = body.trim();
@@ -66,7 +70,7 @@ export function FeedbackForm({
       ? colors.attention
       : colors.textMuted;
 
-  const canSubmit = trimmed.length > 0 && !overLimit && !submitting;
+  const canSubmit = accepted && trimmed.length > 0 && !overLimit && !submitting;
 
   const techPreview = useMemo(() => {
     if (errorContext === undefined) return null;
@@ -84,11 +88,14 @@ export function FeedbackForm({
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
+    setSubmitError('');
     try {
-      await onSubmit({ body: trimmed, category, errorContext });
+      await onSubmit({ body: trimmed, category, errorContext: includeDiagnostics ? errorContext : undefined });
       setBody('');
-    } catch (err: any) {
-      Alert.alert('Could not send', err?.message ?? 'Please try again.');
+      setAccepted(false);
+      setIncludeDiagnostics(false);
+    } catch {
+      setSubmitError('Could not send feedback. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +109,7 @@ export function FeedbackForm({
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.heading}>{heading}</Text>
+      <Text accessibilityRole="header" style={styles.heading}>{heading}</Text>
 
       <View style={styles.categoryRow}>
         {CATEGORIES.map(opt => {
@@ -110,6 +117,8 @@ export function FeedbackForm({
           return (
             <TouchableOpacity
               key={opt.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
               onPress={() => setCategory(opt.key)}
               activeOpacity={0.7}
               style={[styles.catPill, active && styles.catPillActive]}
@@ -128,8 +137,10 @@ export function FeedbackForm({
         })}
       </View>
 
+      <Text style={styles.catLabel}>Your feedback (required)</Text>
       <View style={styles.bodyWrap}>
         <TextInput
+          accessibilityLabel="Your feedback (required)"
           value={body}
           onChangeText={setBody}
           placeholder="What happened? What did you expect?"
@@ -150,6 +161,8 @@ export function FeedbackForm({
       {techPreview ? (
         <View style={styles.techSection}>
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityState={{ expanded: techExpanded }}
             onPress={() => setTechExpanded(v => !v)}
             activeOpacity={0.7}
             style={styles.techHeader}
@@ -161,7 +174,7 @@ export function FeedbackForm({
             />
             <Text style={styles.techHeading}>Technical details</Text>
             <Text style={styles.techHint}>
-              (included automatically — tap to {techExpanded ? 'hide' : 'view'})
+              (optional — {techExpanded ? 'hide' : 'view'})
             </Text>
           </TouchableOpacity>
           {techExpanded ? (
@@ -178,6 +191,11 @@ export function FeedbackForm({
         </View>
       ) : null}
 
+      {techPreview ? <ConsentCheck checked={includeDiagnostics} onChange={setIncludeDiagnostics} label="Include the technical details shown above (optional)." /> : null}
+      <Text style={styles.catLabel}>We use your message and, when signed in, your account ID to handle this request. Avoid passwords or sensitive information. For a reply while signed out, include a contact email in your message.</Text>
+      <Link href="/privacy" style={{ color: colors.purpleLight, paddingVertical: 10 }}>Read the Privacy Policy</Link>
+      <ConsentCheck checked={accepted} onChange={setAccepted} label="I agree to send this message to Rankr for handling my request." />
+      {submitError ? <Text accessibilityRole="alert" style={{ color: colors.error }}>{submitError}</Text> : null}
       <View style={styles.footer}>
         {onCancel ? (
           <Button

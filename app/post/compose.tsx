@@ -21,7 +21,7 @@ import {
   type ComposePostAttachedItem,
   type Visibility,
 } from '@/components';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { draftStorage } from '@/lib/draftStorage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -61,7 +61,7 @@ export default function ComposePostScreen() {
   // Load any saved draft on mount.
   useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(DRAFT_KEY)
+    draftStorage.getItem(DRAFT_KEY)
       .then((stored) => {
         if (cancelled) return;
         if (stored) {
@@ -105,9 +105,9 @@ export default function ComposePostScreen() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       if (next.trim().length === 0) {
-        AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+        draftStorage.removeItem(DRAFT_KEY).catch(() => {});
       } else {
-        AsyncStorage.setItem(DRAFT_KEY, next).catch(() => {});
+        draftStorage.setItem(DRAFT_KEY, next).catch(() => {});
       }
     }, DRAFT_SAVE_DEBOUNCE_MS);
   }, []);
@@ -129,7 +129,7 @@ export default function ComposePostScreen() {
       listItemId: attachedItemId,
     });
     bodyRef.current = '';
-    await AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+    await draftStorage.removeItem(DRAFT_KEY).catch(() => {});
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     router.back();
   };
@@ -142,14 +142,14 @@ export default function ComposePostScreen() {
     }
     Alert.alert(
       'Discard draft?',
-      'Your text is saved as a draft and will be restored next time. Or discard now to clear it.',
+      Platform.OS === 'web' ? 'Your unsent text will be lost if you leave this page.' : 'Your text is saved as a draft and will be restored next time. Or discard now to clear it.',
       [
-        { text: 'Keep draft', style: 'cancel', onPress: () => router.back() },
+        { text: Platform.OS === 'web' ? 'Keep editing' : 'Keep draft', style: 'cancel', onPress: () => { if (Platform.OS !== 'web') router.back(); } },
         {
           text: 'Discard',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+            await draftStorage.removeItem(DRAFT_KEY).catch(() => {});
             bodyRef.current = '';
             router.back();
           },

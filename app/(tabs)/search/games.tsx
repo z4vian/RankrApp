@@ -371,7 +371,7 @@ export default function GamesSearch() {
       activeOpacity={0.8}
     >
       {item.background_image ? (
-        <Image source={{ uri: item.background_image }} style={styles.cover} />
+        <Image accessibilityLabel={`Cover artwork for ${item.name}`} source={{ uri: item.background_image }} style={styles.cover} />
       ) : (
         <View style={styles.noImage}>
           <Ionicons name="game-controller-outline" size={20} color="#555" />
@@ -386,7 +386,7 @@ export default function GamesSearch() {
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.container}>
-        <TextInput
+        <TextInput accessibilityLabel="Search games..."
           style={styles.input}
           placeholder="Search games..."
           placeholderTextColor="#555"
@@ -432,7 +432,7 @@ export default function GamesSearch() {
             <>
               <View style={styles.sheetHeader}>
                 {selectedItem.image_url ? (
-                  <Image source={{ uri: selectedItem.image_url }} style={styles.sheetImage} />
+                  <Image accessibilityLabel={`Cover artwork for ${selectedItem.title}`} source={{ uri: selectedItem.image_url }} style={styles.sheetImage} />
                 ) : (
                   <View style={styles.sheetImagePlaceholder}>
                     <Ionicons name="game-controller-outline" size={28} color="#555" />
@@ -520,7 +520,7 @@ export default function GamesSearch() {
                 <>
                   <Text style={styles.sheetQuestion}>Add notes or photos</Text>
                   <Text style={styles.sheetSubtext}>Optional — adding to: {selectedList?.title}</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel="Write your thoughts..."
                     style={styles.notesInput}
                     placeholder="Write your thoughts..."
                     placeholderTextColor="#555"
@@ -536,7 +536,7 @@ export default function GamesSearch() {
                   {photos.length > 0 && (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                       {photos.map((uri, i) => (
-                        <Image key={i} source={{ uri }} style={styles.photoThumb} />
+                        <Image accessibilityLabel={`Attached photo ${i + 1}`} key={i} source={{ uri }} style={styles.photoThumb} />
                       ))}
                     </ScrollView>
                   )}

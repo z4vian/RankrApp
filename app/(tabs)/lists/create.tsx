@@ -107,9 +107,9 @@ export default function CreateList() {
       >
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Text style={styles.label}>Title</Text>
-        <TextInput style={styles.input} placeholder="e.g. My Favorite Movies" placeholderTextColor="#aaa" value={title} onChangeText={setTitle} />
+        <TextInput accessibilityLabel="e.g. My Favorite Movies" style={styles.input} placeholder="e.g. My Favorite Movies" placeholderTextColor="#aaa" value={title} onChangeText={setTitle} />
         <Text style={styles.label}>Description (optional)</Text>
-        <TextInput style={[styles.input, styles.textArea]} placeholder="What is this list about?" placeholderTextColor="#aaa" value={description} onChangeText={setDescription} multiline numberOfLines={3} />
+        <TextInput accessibilityLabel="What is this list about?" style={[styles.input, styles.textArea]} placeholder="What is this list about?" placeholderTextColor="#aaa" value={description} onChangeText={setDescription} multiline numberOfLines={3} />
         <Text style={styles.label}>Category</Text>
         <View style={styles.categoryRow}>
           {CATEGORIES.map((cat) => (

@@ -1,3 +1,4 @@
+import { takeDiagnostic } from '@/lib/diagnostics';
 /**
  * app/feedback.tsx
  *
@@ -23,50 +24,15 @@ import { FeedbackForm, type FeedbackFormSubmitInput, useToast } from '@/componen
 import { submitFeedback } from '@/lib/feedback';
 import { colors, spacing, typography } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-/**
- * Decode the URL-safe base64 produced by ErrorBoundary.encodeErrorParam().
- * Falls back to hex when the encoder's btoa path wasn't available — same
- * "hex." prefix the encoder uses.
- *
- * Returns the parsed object (or `undefined` if anything goes wrong) so we
- * can hand it straight to FeedbackForm's `errorContext` prop.
- */
-function decodeErrorParam(param: string | undefined): unknown {
-  if (!param) return undefined;
-  try {
-    if (param.startsWith('hex.')) {
-      const hex = param.slice(4);
-      let s = '';
-      for (let i = 0; i < hex.length; i += 2) {
-        s += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16));
-      }
-      return JSON.parse(s);
-    }
-    // URL-safe base64 → standard base64.
-    let std = param.replace(/-/g, '+').replace(/_/g, '/');
-    while (std.length % 4 !== 0) std += '=';
-    if (typeof globalThis.atob !== 'function') return undefined;
-    const decoded = globalThis.atob(std);
-    // Reverse the encoder's `unescape(encodeURIComponent(json))` step.
-    const json = decodeURIComponent(escape(decoded));
-    return JSON.parse(json);
-  } catch {
-    return undefined;
-  }
-}
 
 export default function FeedbackScreen() {
   const router = useRouter();
   const { showToast } = useToast();
-  const params = useLocalSearchParams<{ error?: string }>();
-
-  // Decode error context ONCE — useMemo so re-renders don't re-parse.
-  const errorContext = useMemo(() => decodeErrorParam(params.error), [params.error]);
+  const [errorContext] = useState(takeDiagnostic);
 
   const handleSubmit = async (input: FeedbackFormSubmitInput) => {
     try {

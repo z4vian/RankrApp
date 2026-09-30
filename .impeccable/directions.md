@@ -1,0 +1,6 @@
+# Direction exploration
+Grounded candidates, by resonance: (1) record-store listening shelf, (2) critics' year-end ballot, (3) handwritten mixtape liner, (4) film-festival program, (5) library catalog, (6) tournament bracket, (7) independent culture magazine. These span retail display, editorial/print, archive, and competition systems. Seed a34c4fc3 assigns 7.
+
+The user wants features first. Magazine typography and a five-category editorial index introduce the breadth; annotated app previews prove ranking, lists, and social features. A ranked-list demo follows the feature tour.
+
+Challenger verdicts on audience identification / product clarity: darkroom exposure sheets declined (photography metaphor is narrower than the app; tonal discipline retained); oscilloscope declined (instrument grammar distracts from personal favorites; selected-state precision retained); ikebana declined (garden arrangement is an indirect explanation; asymmetry and quiet space retained); sleeping city declined (map and weather imply features absent here; continuity between sections retained); pulp rack competitive (media covers feel familiar but rack navigation hides feature breadth); toyism collective declined (pseudonymous social expression resonates weakly, symbol controls obscure task; strict consistent icon vocabulary retained).

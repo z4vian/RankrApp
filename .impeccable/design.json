@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-29T20:53:55.549800+00:00",
+  "title": "Design System: Rankr Web Marketing",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Action violet"
+      },
+      "accent-text": {
+        "role": "primary",
+        "displayName": "Pale violet"
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Ink charcoal"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Raised charcoal"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Near white"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Cool supporting gray"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Marketing display",
+        "purpose": "Landing hero headline; explicit viewport overrides are documented in DESIGN.md."
+      },
+      "body": {
+        "displayName": "Marketing body",
+        "purpose": "Inherited landing body; preview metadata is a separate local scale."
+      }
+    },
+    "shadows": [
+      {
+        "name": "decorative-cover",
+        "value": "0 16px 24px #0003",
+        "purpose": "Angled decorative covers at the sides of the desktop preview."
+      }
+    ],
+    "motion": [
+      {
+        "name": "button-background",
+        "value": "background .18s",
+        "purpose": "Primary button hover background transition."
+      },
+      {
+        "name": "gallery-in",
+        "value": "gallery-in .45s ease-out",
+        "purpose": "Cover-grid entrance: opacity .65 to 1 and translateY(8px) to translateY(0)."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation:none!important;transition:none!important;scroll-behavior:auto!important",
+        "purpose": "Applied to the marketing root and descendants when prefers-reduced-motion is reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-min",
+        "value": "1700px"
+      },
+      {
+        "name": "dense-preview-min",
+        "value": "1101px"
+      },
+      {
+        "name": "compact-max",
+        "value": "1100px"
+      },
+      {
+        "name": "stacked-max",
+        "value": "760px"
+      },
+      {
+        "name": "narrow-max",
+        "value": "390px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The marketing signup link, with the implemented hover and focus color.",
+      "html": "<a class=\"ds-button\" href=\"#signup\">Start your list</a>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:#7651e4;color:#fff;border:0;border-radius:8px;padding:14px 28px;font-weight:600;min-height:50px;font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-button:hover{background:#6540cd}.ds-button:focus-visible{outline-color:#bdadff!important}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}"
+    },
+    {
+      "name": "Compact action",
+      "kind": "button",
+      "refersTo": "button-small",
+      "description": "Compact header action; responsive padding follows the landing header.",
+      "html": "<a class=\"ds-button ds-small\" href=\"#signup\">Start your list</a>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:#7651e4;color:#fff;border:0;border-radius:8px;padding:14px 28px;font-weight:600;min-height:50px;font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-button:hover{background:#6540cd}.ds-button:focus-visible{outline-color:#bdadff!important}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button.ds-small{padding:10px 20px;min-height:42px;font-size:12px}@media(max-width:760px){.ds-button.ds-small{padding:10px 13px;min-height:48px}}"
+    },
+    {
+      "name": "Category selector",
+      "kind": "chip",
+      "refersTo": "category-selector",
+      "description": "Native toggle button; selected state is shown with text and an underline.",
+      "html": "<button class=\"ds-category\" aria-pressed=\"true\"><svg width=\"27\" height=\"27\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1Zm0 0v16\"/></svg>Books</button>",
+      "css": ".ds-category{display:flex;align-items:center;justify-content:center;gap:12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#b7bac9;padding:12px 8px;font-size:14px;min-height:49px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-category[aria-pressed=true]{color:#b19afa;border-color:#b19afa}.ds-category:hover{color:#fff}.ds-category:focus-visible{outline-color:#bdadff!important}"
+    },
+    {
+      "name": "Sidebar selector",
+      "kind": "nav",
+      "refersTo": "sidebar-selector-selected",
+      "description": "The compact alternative for selecting a sample media category.",
+      "html": "<nav class=\"ds-sidebar\" aria-label=\"Sample collection categories\"><button aria-pressed=\"true\">Movies</button><button aria-pressed=\"false\">Books</button></nav>",
+      "css": ".ds-sidebar{width:162px;padding:22px 16px;background:#171b20;border-right:1px solid #303640}.ds-sidebar button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 9px;background:none;border:0;color:#b7bac9;font-size:11px;min-height:42px;text-align:left;border-radius:6px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-sidebar button[aria-pressed=true]{background:#30263e;color:#c1affd}.ds-sidebar button:focus-visible{outline-color:#bdadff!important}"
+    },
+    {
+      "name": "Ordered step card",
+      "kind": "card",
+      "refersTo": "step-card",
+      "description": "A bordered explanatory card with a circular sequence marker.",
+      "html": "<article class=\"ds-step\"><span>1</span><h3>Search for a favorite</h3><p>Find the film, track, game, show, or book you want to remember.</p></article>",
+      "css": ".ds-step{background:#1c2027;color:#f4f4f6;border:1px solid #363b45;border-radius:14px;padding:24px;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-step>span{background:#704ad7;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:14px;font-weight:600;margin-bottom:24px}.ds-step h3{font-size:20px;line-height:1.2;letter-spacing:-.025em;margin:0 0 12px}.ds-step p{margin:0;color:#b7bac9;font-size:14px}"
+    },
+    {
+      "name": "Comparison panel",
+      "kind": "custom",
+      "refersTo": "comparison-panel",
+      "description": "Border-defined interactive demo container and its reset control; imagery is intentionally omitted from this self-contained specimen.",
+      "html": "<section class=\"ds-comparison\"><div class=\"ds-heading\"><h3>Choose your favorite</h3><button>Reset</button></div><p>Your opinion is the only right answer.</p></section>",
+      "css": ".ds-comparison{padding:24px;background:#1b2026;color:#f4f4f6;border:1px solid #414752;border-radius:14px;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.ds-heading h3{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-.025em;margin:0}.ds-heading button{border:0;background:transparent;color:#b19afa;padding:10px;font-size:12px;min-height:44px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-heading button:focus-visible{outline-color:#bdadff!important}.ds-heading button:disabled{cursor:default;opacity:.5}.ds-comparison>p{font-size:12px;color:#b7bac9;text-align:center;padding-top:18px;min-height:38px;margin:0}"
+    },
+    {
+      "name": "Comparison choice label",
+      "kind": "button",
+      "refersTo": "comparison-choice",
+      "description": "Text and selected border extracted from the film-choice button; the production component also contains a 4:5 image.",
+      "html": "<button class=\"ds-choice\" aria-pressed=\"true\"><span>The General</span><small>Your pick</small></button>",
+      "css": ".ds-choice{padding:0 0 10px;background:#232831;border:2px solid transparent;border-radius:8px;color:#fff;min-width:0;overflow:hidden;text-align:left;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-choice>span{font-size:13px;font-weight:600;padding:10px 10px 0;display:block}.ds-choice small{font-size:11px;color:#c6c0d7;padding:3px 10px;display:block}.ds-choice[aria-pressed=true]{border-color:#b49afb}.ds-choice[aria-pressed=true] small{color:#d2c4ff}.ds-choice:focus-visible{outline-color:#bdadff!important}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Personal media journal",
+    "overview": "Rankr\u2019s marketing world is a personal media journal: ink charcoal, near-white text, violet actions, geometric sans typography, and real archival imagery. The dark frame lets cover art supply variety while type and restrained controls organize the page.\n\nThis document records the web marketing scope implemented in app/landing.web.tsx and lib/landing.css. The existing React Native application has a separate system in lib/theme.ts; its purple, surfaces, type ramp, shadows, and spacing are not aliases for these marketing values. Reuse the appropriate source for the surface being extended.",
+    "keyCharacteristics": [
+      "Dark neutral framing with violet actions and pale violet selection cues.",
+      "Locally hosted Inter in three supplied weights.",
+      "Dense ranked-media previews alongside quieter explanatory content.",
+      "Small rounded controls, bordered containers, and limited photographic depth."
+    ],
+    "rules": [
+      {
+        "name": "The Scope Rule",
+        "body": "Marketing values belong to the landing stylesheet; application values belong to the existing theme. Their similar roles do not make their values interchangeable.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do use the marketing tokens below for extensions of the landing surface.",
+      "Do use lib/theme.ts when extending existing application screens; preserve the scope distinction.",
+      "Do keep real headings, links, buttons, and list semantics in the interface.",
+      "Do provide meaningful alternatives for content images and empty alternatives for decorative repeats.",
+      "Do retain sample-data labeling and image provenance when reusing marketing media.",
+      "Do preserve keyboard operation, visible focus, and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don\u2019t treat the approved composition as a raster interface; the build uses real HTML.",
+      "Don\u2019t assume every media category has twelve examples; use the actual catalog length.",
+      "Don\u2019t generalize preview microcopy sizes into body or form typography.",
+      "Don\u2019t substitute uncredited artwork or infer that an image\u2019s title grants reuse rights.",
+      "Don\u2019t apply marketing color values as an undocumented replacement for the application theme."
+    ]
+  }
+}

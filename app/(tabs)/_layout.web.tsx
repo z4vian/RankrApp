@@ -46,8 +46,8 @@ import {
 const PURPLE_TEXT = '#A78BFA';
 const SIDEBAR_BG = '#13131a';
 const SIDEBAR_BORDER = '#1e1e2a';
-const INACTIVE = '#444';
-const INACTIVE_LABEL = '#666';
+const INACTIVE = '#a6a4b3';
+const INACTIVE_LABEL = '#a6a4b3';
 
 // ---------------------------------------------------------------------------
 // Route definitions — order matches _layout.tsx

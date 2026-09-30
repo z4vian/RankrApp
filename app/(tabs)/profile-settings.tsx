@@ -268,7 +268,7 @@ export default function ProfileSettings() {
             <Text style={styles.fieldLabel}>Display Name</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="person-outline" size={18} color="#555" style={styles.inputIcon} />
-              <TextInput
+              <TextInput accessibilityLabel="Your name"
                 style={styles.input}
                 placeholder="Your name"
                 placeholderTextColor="#555"
@@ -280,7 +280,7 @@ export default function ProfileSettings() {
             <Text style={styles.fieldLabel}>Username</Text>
             <View style={styles.inputWrapper}>
               <Text style={styles.atSign}>@</Text>
-              <TextInput
+              <TextInput accessibilityLabel="username"
                 style={styles.input}
                 placeholder="username"
                 placeholderTextColor="#555"
@@ -292,7 +292,7 @@ export default function ProfileSettings() {
 
             <Text style={styles.fieldLabel}>Bio</Text>
             <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-              <TextInput
+              <TextInput accessibilityLabel="Tell people about yourself..."
                 style={[styles.input, styles.textArea]}
                 placeholder="Tell people about yourself..."
                 placeholderTextColor="#555"
@@ -331,7 +331,7 @@ export default function ProfileSettings() {
             <Text style={styles.fieldLabel}>New Password</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed-outline" size={18} color="#555" style={styles.inputIcon} />
-              <TextInput
+              <TextInput accessibilityLabel="New password"
                 style={styles.input}
                 placeholder="New password"
                 placeholderTextColor="#555"
@@ -345,7 +345,7 @@ export default function ProfileSettings() {
             <Text style={styles.fieldLabel}>Confirm New Password</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed-outline" size={18} color="#555" style={styles.inputIcon} />
-              <TextInput
+              <TextInput accessibilityLabel="Confirm new password"
                 style={styles.input}
                 placeholder="Confirm new password"
                 placeholderTextColor="#555"
@@ -434,6 +434,9 @@ export default function ProfileSettings() {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/cookies')} style={{ padding: 16 }}>
+          <Text style={{ color: colors.purpleLight }}>Cookie &amp; Storage Policy</Text>
+        </TouchableOpacity>
         {/* ---- About section — feedback, legal, version ---- */}
         <View style={styles.accountSection}>
           <Text style={styles.accountHeader}>ABOUT</Text>

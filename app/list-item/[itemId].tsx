@@ -333,7 +333,7 @@ export default function ListItemDetailScreen() {
         {/* ----- Hero ----- */}
         <View style={styles.hero}>
           {detail.image_url ? (
-            <Image source={{ uri: detail.image_url }} style={styles.poster} />
+            <Image accessibilityLabel={`Cover artwork for ${detail.title}`} source={{ uri: detail.image_url }} style={styles.poster} />
           ) : (
             <View style={[styles.poster, styles.posterPlaceholder]}>
               <Ionicons name="image-outline" size={40} color={colors.textMuted} />

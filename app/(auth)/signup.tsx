@@ -1,3 +1,5 @@
+import { ConsentCheck } from '@/components/ConsentCheck';
+import { LEGAL_VERSION } from '@/lib/legal';
 import {
   createProfile,
   isUsernameAvailable,
@@ -13,7 +15,7 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 
@@ -29,6 +31,8 @@ type FocusedField = 'username' | 'email' | 'password' | 'confirm' | null;
 
 export default function Signup() {
   const router = useRouter();
+  const [accepted, setAccepted] = useState(false);
+  const [notice, setNotice] = useState('');
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -75,7 +79,10 @@ export default function Signup() {
   }, [username]);
 
   const handleSignup = async () => {
+    if (loading) return;
     setError('');
+    setNotice('');
+    if (!accepted) { setError('Please review and accept the Terms before creating an account.'); return; }
     // 1. Username validation
     const usernameValidation = validateUsername(username);
     if (usernameValidation) {
@@ -103,10 +110,11 @@ export default function Signup() {
 
     // 3. Sign up. Stash desired username in user_metadata so a post-confirm
     // hook can create the profile if email confirmation is enabled.
+    try {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { intended_username: username } },
+      options: { data: { intended_username: username, terms_version: LEGAL_VERSION, privacy_version: LEGAL_VERSION, terms_accepted_at: new Date().toISOString() } },
     });
     if (signUpError) {
       setError(signUpError.message);
@@ -115,14 +123,11 @@ export default function Signup() {
     }
 
     const user = data?.user;
-    if (!user) {
+    if (!data.session || !user) {
       // Email confirmation flow — no user yet. The username is stashed in
       // user_metadata for a future post-confirmation handler to consume.
       setLoading(false);
-      Alert.alert(
-        'Check your email',
-        'We sent a confirmation link. Click it to finish creating your account.',
-      );
+      setNotice('Check your email for a confirmation link, then return to log in.');
       return;
     }
 
@@ -141,16 +146,21 @@ export default function Signup() {
     // 5. Success.
     setLoading(false);
     router.replace('/(tabs)' as any);
+    } catch { setError('Could not create your account. Check your connection and try again.'); }
+    finally { setLoading(false); }
   };
 
   const handleGoogleSignup = async () => {
-    setError('');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'rankr://auth/callback' },
-    });
-    if (error) setError(error.message);
-    else if (data?.url) await WebBrowser.openAuthSessionAsync(data.url, 'rankr://auth/callback');
+    if (loading) return;
+    if (!accepted) { setError('Please review and accept the Terms before continuing.'); return; }
+    setError(''); setLoading(true);
+    try {
+      const redirectTo = Platform.OS === 'web' ? `${window.location.origin}/` : 'rankr://auth/callback';
+      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+      if (error) throw error;
+      if (Platform.OS !== 'web' && data?.url) await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    } catch { setError('Could not start Google sign-in. Please try again.'); }
+    finally { setLoading(false); }
   };
 
   // Inline status indicator for the username field
@@ -173,7 +183,7 @@ export default function Signup() {
         <Ionicons
           name="close-circle"
           size={18}
-          color="#ef4444"
+          color="#ff8585"
           style={styles.usernameStatusIcon}
         />
       );
@@ -186,6 +196,7 @@ export default function Signup() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <View style={styles.logoArea}>
         <View style={styles.logoCircle}>
           <Text style={styles.logoText}>R</Text>
@@ -196,30 +207,31 @@ export default function Signup() {
 
       <View style={styles.form}>
         {error ? (
-          <View style={styles.errorBox}>
-            <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+          <View accessibilityRole="alert" style={styles.errorBox}>
+            <Ionicons name="alert-circle-outline" size={16} color="#ff8585" />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
 
+        {notice ? <Text accessibilityLiveRegion="polite" style={{ color: colors.success, lineHeight: 22 }}>{notice}</Text> : null}
         {/* Username (required) */}
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>
             Username <Text style={styles.fieldRequired}>*</Text>
           </Text>
           <View style={[styles.inputWrapper, focused === 'username' && styles.inputWrapperFocused]}>
-            <Ionicons name="at-outline" size={18} color={focused === 'username' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <Ionicons name="at-outline" size={18} color={focused === 'username' ? colors.purpleLight : colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="username"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a6a4b3"
               value={username}
               onChangeText={(t) => setUsername(t.toLowerCase().trim())}
               onFocus={() => setFocused('username')}
               onBlur={() => setFocused(null)}
               autoCapitalize="none"
               autoCorrect={false}
-              autoComplete="username-new"
+              autoComplete="username"
               textContentType="username"
               accessibilityLabel="Username"
             />
@@ -241,11 +253,11 @@ export default function Signup() {
             Email <Text style={styles.fieldRequired}>*</Text>
           </Text>
           <View style={[styles.inputWrapper, focused === 'email' && styles.inputWrapperFocused]}>
-            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.purpleLight : colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="you@example.com"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a6a4b3"
               value={email}
               onChangeText={setEmail}
               onFocus={() => setFocused('email')}
@@ -265,11 +277,11 @@ export default function Signup() {
             Password <Text style={styles.fieldRequired}>*</Text>
           </Text>
           <View style={[styles.inputWrapper, focused === 'password' && styles.inputWrapperFocused]}>
-            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="At least 8 characters, 1 letter, 1 number"
-              placeholderTextColor="#555"
+              placeholder="Create a password"
+              placeholderTextColor="#a6a4b3"
               value={password}
               onChangeText={setPassword}
               onFocus={() => setFocused('password')}
@@ -277,7 +289,7 @@ export default function Signup() {
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
-              autoComplete="password-new"
+              autoComplete={'new-password' as any}
               textContentType="newPassword"
               accessibilityLabel="Password"
             />
@@ -294,6 +306,7 @@ export default function Signup() {
               />
             </TouchableOpacity>
           </View>
+          <Text style={styles.fieldHint}>Use at least 8 characters, including a letter and a number.</Text>
           {/* Live password rule checklist — only renders once the user has
               started typing so the form isn't littered with red X's on mount. */}
           {password.length > 0 ? (() => {
@@ -311,7 +324,7 @@ export default function Signup() {
                     <Ionicons
                       name={r.ok ? 'checkmark-circle' : 'ellipse-outline'}
                       size={13}
-                      color={r.ok ? '#22c55e' : '#555'}
+                      color={r.ok ? '#22c55e' : colors.textMuted}
                     />
                     <Text style={[styles.pwRuleText, r.ok && styles.pwRuleTextOk]}>
                       {r.label}
@@ -328,11 +341,11 @@ export default function Signup() {
             Confirm Password <Text style={styles.fieldRequired}>*</Text>
           </Text>
           <View style={[styles.inputWrapper, focused === 'confirm' && styles.inputWrapperFocused]}>
-            <Ionicons name="lock-closed-outline" size={18} color={focused === 'confirm' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <Ionicons name="lock-closed-outline" size={18} color={focused === 'confirm' ? colors.purpleLight : colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Re-enter password"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a6a4b3"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               onFocus={() => setFocused('confirm')}
@@ -340,7 +353,7 @@ export default function Signup() {
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
-              autoComplete="password-new"
+              autoComplete={'new-password' as any}
               textContentType="newPassword"
               returnKeyType="go"
               onSubmitEditing={handleSignup}
@@ -349,10 +362,13 @@ export default function Signup() {
           </View>
         </View>
 
+        <ConsentCheck checked={accepted} onChange={setAccepted} label="I am at least 13, agree to the Terms & Conditions, and acknowledge the Privacy Policy. If required, I have a parent or guardian’s permission." />
         <TouchableOpacity
-          style={styles.primaryButton}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: loading || !accepted, busy: loading }}
+          style={[styles.primaryButton, (!accepted || loading) && { opacity: 0.55 }]}
           onPress={handleSignup}
-          disabled={loading}
+          disabled={loading || !accepted}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -367,12 +383,12 @@ export default function Signup() {
           <View style={styles.divider} />
         </View>
 
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignup}>
+        <TouchableOpacity accessibilityRole="button" disabled={loading || !accepted} style={[styles.googleButton, (!accepted || loading) && { opacity: 0.55 }]} onPress={handleGoogleSignup}>
           <Ionicons name="logo-google" size={18} color="#fff" />
           <Text style={styles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.switchRow} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.switchRow} accessibilityRole="link" onPress={() => router.replace('/(auth)/login')}>
           <Text style={styles.switchText}>Already have an account? </Text>
           <Text style={styles.switchLink}>Log in</Text>
         </TouchableOpacity>
@@ -380,7 +396,7 @@ export default function Signup() {
         {/* Session 1 — legal footer. By creating an account, the user is
             explicitly agreeing — same wording as Letterboxd's signup. */}
         <View style={styles.legalRow}>
-          <Text style={styles.legalText}>By creating an account you agree to our </Text>
+          <Text style={styles.legalText}>Review our </Text>
           <TouchableOpacity
             onPress={() => router.push('/terms' as any)}
             hitSlop={6}
@@ -401,12 +417,14 @@ export default function Signup() {
           <Text style={styles.legalText}>.</Text>
         </View>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { flexGrow: 1, padding: 24, width: '100%', maxWidth: 500, alignSelf: 'center', justifyContent: 'center' },
   logoArea: { alignItems: 'center', marginBottom: 40 },
   logoCircle: {
     width: 72, height: 72, borderRadius: 20,
@@ -416,17 +434,17 @@ const styles = StyleSheet.create({
   },
   logoText: { color: '#fff', fontSize: 36, fontWeight: 'bold' },
   appName: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 6 },
-  tagline: { color: '#555', fontSize: 14 },
+  tagline: { color: colors.textMuted, fontSize: 14 },
   form: { gap: 14 },
   field: { gap: 6 },
   fieldLabel: { color: '#bbb', fontSize: 13, fontWeight: '600', marginLeft: 4 },
-  fieldRequired: { color: '#ef4444' },
+  fieldRequired: { color: '#ff8585' },
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#2a1a1a', borderRadius: 10,
     padding: 12, borderWidth: 1, borderColor: '#3a2020',
   },
-  errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
+  errorText: { color: '#ff8585', fontSize: 14, flex: 1 },
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.card, borderRadius: 14,
@@ -439,15 +457,15 @@ const styles = StyleSheet.create({
     ...glow.purple,
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, color: '#fff', fontSize: 15 },
+  input: { flex: 1, minWidth: 0, color: '#fff', fontSize: 15 },
   usernameStatusIcon: { marginLeft: 8 },
-  fieldHint: { color: '#555', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
-  fieldError: { color: '#ef4444', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
+  fieldHint: { color: colors.textMuted, fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
+  fieldError: { color: '#ff8585', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
 
   // Password rule checklist (lives under the password input)
   pwRules: { marginTop: 8, marginLeft: 4, gap: 4 },
   pwRuleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  pwRuleText: { color: '#777', fontSize: 12 },
+  pwRuleText: { color: colors.textMuted, fontSize: 12 },
   pwRuleTextOk: { color: '#22c55e' },
   primaryButton: {
     backgroundColor: colors.purple, borderRadius: 14,
@@ -459,7 +477,7 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   divider: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { color: '#555', fontSize: 13 },
+  dividerText: { color: colors.textMuted, fontSize: 13 },
   googleButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 10, backgroundColor: colors.card, borderRadius: 14,
@@ -467,7 +485,7 @@ const styles = StyleSheet.create({
   },
   googleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
-  switchText: { color: '#555', fontSize: 14 },
+  switchText: { color: colors.textMuted, fontSize: 14 },
   switchLink: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
 
   legalRow: {
@@ -477,6 +495,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  legalText: { color: '#666', fontSize: 12 },
+  legalText: { color: colors.textMuted, fontSize: 12 },
   legalLink: { color: colors.purpleLight, fontSize: 12, fontWeight: '600' },
 });

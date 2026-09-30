@@ -118,7 +118,6 @@ export default function BooksSearch() {
       const data = await response.json();
       const items = Array.isArray(data?.items) ? data.items : [];
       // One-render diagnostic to make verification easier in dev console.
-      console.log('[books search]', { query: searchQuery, resultCount: items.length });
       setResults(items);
     } catch (err) {
       console.warn('[books search] error', err);
@@ -390,7 +389,7 @@ export default function BooksSearch() {
         activeOpacity={0.8}
       >
         {thumb ? (
-          <Image source={{ uri: thumb }} style={styles.poster} />
+          <Image accessibilityLabel={`Cover artwork for ${title}`} source={{ uri: thumb }} style={styles.poster} />
         ) : (
           <View style={styles.noPoster}>
             <Ionicons name="book-outline" size={20} color="#555" />
@@ -410,7 +409,7 @@ export default function BooksSearch() {
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.container}>
-        <TextInput
+        <TextInput accessibilityLabel="Search books..."
           style={styles.input}
           placeholder="Search books..."
           placeholderTextColor="#555"
@@ -456,7 +455,7 @@ export default function BooksSearch() {
             <>
               <View style={styles.sheetHeader}>
                 {selectedItem.image_url ? (
-                  <Image source={{ uri: selectedItem.image_url }} style={styles.sheetImage} />
+                  <Image accessibilityLabel={`Cover artwork for ${selectedItem.title}`} source={{ uri: selectedItem.image_url }} style={styles.sheetImage} />
                 ) : (
                   <View style={styles.sheetImagePlaceholder}>
                     <Ionicons name="book-outline" size={28} color="#555" />
@@ -543,7 +542,7 @@ export default function BooksSearch() {
                 <>
                   <Text style={styles.sheetQuestion}>Add notes or photos</Text>
                   <Text style={styles.sheetSubtext}>Optional — adding to: {selectedList?.title}</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel="Write your thoughts..."
                     style={styles.notesInput}
                     placeholder="Write your thoughts..."
                     placeholderTextColor="#555"
@@ -559,7 +558,7 @@ export default function BooksSearch() {
                   {photos.length > 0 && (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                       {photos.map((uri, i) => (
-                        <Image key={i} source={{ uri }} style={styles.photoThumb} />
+                        <Image accessibilityLabel={`Attached photo ${i + 1}`} key={i} source={{ uri }} style={styles.photoThumb} />
                       ))}
                     </ScrollView>
                   )}

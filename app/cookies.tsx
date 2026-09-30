@@ -1,0 +1,11 @@
+import { LegalDocument } from '@/components';
+import { LEGAL_VERSION } from '@/lib/legal';
+export default function CookiesScreen() {
+  return <LegalDocument title="Cookie & Storage Policy" lastUpdated={LEGAL_VERSION} webUrl={null} sections={[
+    { heading: 'What this website uses', body: 'Cookies are small browser files; local storage serves a similar purpose but is not sent with every request. Rankr uses local storage for authentication. This version does not set advertising or analytics cookies and does not load session replay or automatic external crash reporting. Hosting and sign-in providers may use their own operational cookies or logs.' },
+    { heading: 'Sign-in storage', body: 'Supabase uses a project-specific key such as sb-<project-ref>-auth-token to keep your session and refresh tokens. Temporary authentication verifier keys may also be used during sign-in. This storage is necessary to maintain the session you request and is not used for advertising. It can persist across browser restarts until sign-out, revocation, or clearing site data; individual tokens have provider-managed lifetimes.' },
+    { heading: 'Drafts and the interactive demo', body: 'The web composer keeps unsent draft text in component memory only. It is lost when you leave the composer or reload. The landing-page demo also uses memory only: it does not save preferences, identify you, or send your selections to a server. Native apps may store drafts and recommendation caches on the device; these are separate from website cookies.' },
+    { heading: 'Consent choices', body: 'There are no optional analytics or advertising technologies to accept in this version, so Rankr does not show an accept-all cookie banner. Using requested sign-in storage is separate from agreeing to the Terms. If optional tracking is introduced, this policy and the relevant controls must be updated before that tracking begins.' },
+    { heading: 'Managing storage', body: 'Sign out on shared devices. You can inspect or clear site storage in your browser’s privacy settings; doing so signs you out and may interrupt authentication. Blocking all storage may prevent sign-in from working. Clearing browser storage does not delete your server-side account or lists. Use Profile settings or the contact option below for account deletion.' },
+  ]} />;
+}

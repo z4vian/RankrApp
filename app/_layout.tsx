@@ -21,41 +21,17 @@
 
 import { ErrorBoundary } from '@/app/_components/ErrorBoundary';
 import { ToastProvider } from '@/components';
+import { LEGAL_VERSION } from '@/lib/legal';
 import { ListProvider } from '@/lib/ListContext';
 import { isOnboardingComplete } from '@/lib/onboarding';
 import { registerPushToken } from '@/lib/pushTokens';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
+import Head from 'expo-router/head';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
-// Pre-beta Session 1 — initialise Sentry at module load (before any
-// component code). Dynamic-required so the bundle still compiles when
-// sentry-expo isn't installed yet (package.json declares it; the user runs
-// `npm install` to materialise it). Same pattern as expo-notifications.
-//
-// `enabled: !!DSN` means the init becomes a no-op when the env var is
-// empty — safe for dev/CI builds without a real DSN.
-(function initSentry() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require('sentry-expo');
-    if (!Sentry?.init) return;
-    const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
-    Sentry.init({
-      dsn,
-      enableInExpoDevelopment: false,
-      debug: __DEV__,
-      tracesSampleRate: 0.1,
-      enabled: !!dsn,
-    });
-  } catch {
-    // sentry-expo not installed → swallow. ErrorBoundary's captureException
-    // call is also guarded so the whole crash-reporting path no-ops cleanly.
-  }
-})();
 
 /**
  * Request push permission and register a token for the current session.
@@ -106,12 +82,13 @@ export default function RootLayout() {
       setSession(session);
       setLoading(false);
     });
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       // Reset the onboarding flag on auth changes so we re-check for the new
       // user. The next effect re-resolves it.
       setOnboardingDone(null);
     });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Resolve onboarding status whenever a session appears. Runs once per
@@ -141,6 +118,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loading) return;
+    // Legal documents, recovery, and feedback remain reachable without an account.
+    if (['privacy', 'terms', 'cookies', 'image-credits', 'feedback', 'reset-password'].includes(segments[0])) return;
+    if (session && session.user.user_metadata?.terms_version !== LEGAL_VERSION) {
+      if (segments[0] !== 'consent') router.replace('/consent');
+      return;
+    }
+    if (session && segments[0] === 'consent') {
+      router.replace('/(tabs)');
+      return;
+    }
     const inAuthGroup = segments[0] === '(auth)';
     const inLandingGroup = segments[0] === 'landing';
     const inOnboardingGroup = segments[0] === '(onboarding)';
@@ -188,6 +175,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
+      <Head><title>{({ privacy: 'Privacy Policy', terms: 'Terms & Conditions', cookies: 'Cookie & Storage Policy', 'image-credits': 'Image Credits', feedback: 'Send Feedback', signup: 'Create Account', login: 'Log In', 'reset-password': 'Reset Password', consent: 'Your Agreement' } as Record<string, string>)[segments[segments.length - 1]] ?? 'Your Favorites'} · Rankr</title></Head>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ListProvider>
           <ToastProvider>
@@ -208,6 +196,9 @@ export default function RootLayout() {
               <Stack.Screen name="reset-password" />
               <Stack.Screen name="privacy" />
               <Stack.Screen name="terms" />
+              <Stack.Screen name="cookies" />
+              <Stack.Screen name="image-credits" />
+              <Stack.Screen name="consent" />
               <Stack.Screen name="feedback" />
               <Stack.Screen name="blocked-users" />
             </Stack>

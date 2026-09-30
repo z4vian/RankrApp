@@ -1,0 +1,82 @@
+{
+  "pages": [
+    {
+      "name": "desktop",
+      "overflow": {
+        "client": 1536,
+        "scroll": 1536
+      },
+      "violations": []
+    },
+    {
+      "name": "mobile",
+      "overflow": {
+        "client": 390,
+        "scroll": 390
+      },
+      "violations": []
+    },
+    {
+      "name": "narrow",
+      "overflow": {
+        "client": 320,
+        "scroll": 320
+      },
+      "violations": []
+    },
+    {
+      "name": "privacy",
+      "url": "http://127.0.0.1:4175/privacy",
+      "violations": []
+    },
+    {
+      "name": "terms",
+      "url": "http://127.0.0.1:4175/terms",
+      "violations": []
+    },
+    {
+      "name": "cookies",
+      "url": "http://127.0.0.1:4175/cookies",
+      "violations": []
+    },
+    {
+      "name": "image-credits",
+      "url": "http://127.0.0.1:4175/image-credits",
+      "violations": []
+    },
+    {
+      "name": "feedback",
+      "url": "http://127.0.0.1:4175/feedback",
+      "violations": []
+    },
+    {
+      "name": "signup",
+      "url": "http://127.0.0.1:4175/signup",
+      "violations": []
+    },
+    {
+      "name": "login",
+      "url": "http://127.0.0.1:4175/login",
+      "violations": []
+    },
+    {
+      "name": "reset-password",
+      "url": "http://127.0.0.1:4175/reset-password",
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "checks": [
+    "Category selection updates sample list",
+    "Ranking demo reorders gallery",
+    "Demo reset works",
+    "Signup consent is unchecked by default and keyboard operable",
+    "Feedback requires explicit keyboard-operable consent; no messages submitted"
+  ],
+  "storage": {
+    "cookies": "",
+    "local": [],
+    "session": []
+  }
+}

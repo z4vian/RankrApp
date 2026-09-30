@@ -83,7 +83,7 @@ export default function ComparisonSheet({
             accessibilityLabel={`Prefer ${newItem.title} (new)`}
           >
             {newItem.image_url ? (
-              <Image source={{ uri: newItem.image_url }} style={styles.image} />
+              <Image accessibilityLabel={`Cover artwork for ${newItem.title}`} source={{ uri: newItem.image_url }} style={styles.image} />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Ionicons name="image-outline" size={28} color="#555" />
@@ -106,7 +106,7 @@ export default function ComparisonSheet({
             accessibilityLabel={`Prefer ${compareItem.title}, ranked ${Number(compareItem.rank).toFixed(1)}`}
           >
             {compareItem.image_url ? (
-              <Image source={{ uri: compareItem.image_url }} style={styles.image} />
+              <Image accessibilityLabel={`Cover artwork for ${compareItem.title}`} source={{ uri: compareItem.image_url }} style={styles.image} />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Ionicons name="image-outline" size={28} color="#555" />

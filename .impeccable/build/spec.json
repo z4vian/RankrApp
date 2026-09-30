@@ -1,0 +1,319 @@
+{
+  "tool": "comp-spec",
+  "version": 1,
+  "createdAt": "2026-09-29T20:28:58.703Z",
+  "comp": ".impeccable/mocks/approved-homepage.png",
+  "warnings": [
+    "Semantic rectangles manually corrected against approved 1536x1024 comp; original automated output preserved separately. Artwork differs by explicit user request."
+  ],
+  "uncoveredInkCells": [],
+  "compSize": {
+    "width": 1536,
+    "height": 1024
+  },
+  "aspect": 1.5,
+  "orientation": "landscape",
+  "palette": [
+    {
+      "hex": "#17181a",
+      "coverage": 0.8963
+    },
+    {
+      "hex": "#8a837c",
+      "coverage": 0.0315
+    },
+    {
+      "hex": "#3c424a",
+      "coverage": 0.0306
+    },
+    {
+      "hex": "#1a2f4b",
+      "coverage": 0.0221
+    },
+    {
+      "hex": "#f4f4f6",
+      "coverage": 0.0196
+    }
+  ],
+  "bands": [
+    {
+      "y": 0.0235,
+      "strength": 0.2107
+    },
+    {
+      "y": 0.0471,
+      "strength": 0.2167
+    },
+    {
+      "y": 0.1059,
+      "strength": 0.7732
+    },
+    {
+      "y": 0.1412,
+      "strength": 0.9138
+    },
+    {
+      "y": 0.2471,
+      "strength": 0.4047
+    },
+    {
+      "y": 0.5059,
+      "strength": 0.2367
+    },
+    {
+      "y": 0.6471,
+      "strength": 0.2228
+    },
+    {
+      "y": 0.8235,
+      "strength": 0.2006
+    },
+    {
+      "y": 0.9412,
+      "strength": 0.2524
+    }
+  ],
+  "regions": [
+    {
+      "id": "nav",
+      "kind": "chrome",
+      "note": "Brand and navigation row",
+      "box": {
+        "x": 0.107421875,
+        "y": 0.01171875,
+        "w": 0.7877604166666666,
+        "h": 0.05078125
+      },
+      "px": {
+        "x": 165,
+        "y": 12,
+        "w": 1210,
+        "h": 52
+      },
+      "aspect": 23.2692,
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "headline",
+      "kind": "text",
+      "note": "Your favorites, all in order. centered display",
+      "box": {
+        "x": 0.244140625,
+        "y": 0.0849609375,
+        "w": 0.515625,
+        "h": 0.060546875
+      },
+      "px": {
+        "x": 375,
+        "y": 87,
+        "w": 792,
+        "h": 62
+      },
+      "aspect": 12.7742,
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 23,
+          "capHeightPx": 41,
+          "inkIsDark": false,
+          "allCaps": false,
+          "advance": 0.8049,
+          "advTall": 0.7317,
+          "advX": 0.8293,
+          "gap": 0.0732,
+          "xRatio": 0.8359,
+          "stemW": 0.3006,
+          "contrast": 1.2803,
+          "serif": 0.9981,
+          "densTall": 0.6811,
+          "densX": 0.6799,
+          "weight": 0.6811
+        },
+        "widthClass": "wide",
+        "weightClass": "black",
+        "chosen": {
+          "family": "Rankr Inter",
+          "weight": 800,
+          "fontSizePx": 64,
+          "source": "public/fonts/inter-latin-800-normal.woff2",
+          "note": "Actual implementation, visually reviewed against comp"
+        }
+      }
+    },
+    {
+      "id": "categories",
+      "kind": "control",
+      "note": "Five media category buttons",
+      "box": {
+        "x": 0.2708333333333333,
+        "y": 0.171875,
+        "w": 0.4498697916666667,
+        "h": 0.0400390625
+      },
+      "px": {
+        "x": 416,
+        "y": 176,
+        "w": 691,
+        "h": 41
+      },
+      "aspect": 16.8537,
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "features",
+      "kind": "text",
+      "note": "Three feature explanations",
+      "box": {
+        "x": 0.21809895833333334,
+        "y": 0.2373046875,
+        "w": 0.5696614583333334,
+        "h": 0.087890625
+      },
+      "px": {
+        "x": 335,
+        "y": 243,
+        "w": 875,
+        "h": 90
+      },
+      "aspect": 9.7222,
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "signup",
+      "kind": "control",
+      "note": "Centered primary signup link",
+      "box": {
+        "x": 0.4251302083333333,
+        "y": 0.345703125,
+        "w": 0.14973958333333334,
+        "h": 0.0517578125
+      },
+      "px": {
+        "x": 653,
+        "y": 354,
+        "w": 230,
+        "h": 53
+      },
+      "aspect": 4.3396,
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "sample-shell",
+      "kind": "chrome",
+      "note": "Sample ranked-list interface",
+      "container": true,
+      "box": {
+        "x": 0.20572916666666666,
+        "y": 0.4150390625,
+        "w": 0.5885416666666666,
+        "h": 0.4775390625
+      },
+      "px": {
+        "x": 316,
+        "y": 425,
+        "w": 904,
+        "h": 489
+      },
+      "aspect": 1.8487,
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "covers",
+      "kind": "plate",
+      "note": "Twelve cinematic media cover illustrations in sample gallery",
+      "box": {
+        "x": 0.3216145833333333,
+        "y": 0.5009765625,
+        "w": 0.4622395833333333,
+        "h": 0.3818359375
+      },
+      "px": {
+        "x": 494,
+        "y": 513,
+        "w": 710,
+        "h": 391
+      },
+      "aspect": 1.8159,
+      "medium": "raster",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "side-covers-left",
+      "kind": "plate",
+      "note": "Angled cinematic cover images",
+      "box": {
+        "x": 0.0,
+        "y": 0.3701171875,
+        "w": 0.20572916666666666,
+        "h": 0.5224609375
+      },
+      "px": {
+        "x": 0,
+        "y": 379,
+        "w": 316,
+        "h": 535
+      },
+      "aspect": 0.5907,
+      "medium": "raster",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "side-covers-right",
+      "kind": "plate",
+      "note": "Angled cinematic cover images",
+      "box": {
+        "x": 0.7942708333333334,
+        "y": 0.3662109375,
+        "w": 0.20572916666666666,
+        "h": 0.5263671875
+      },
+      "px": {
+        "x": 1220,
+        "y": 375,
+        "w": 316,
+        "h": 539
+      },
+      "aspect": 0.5863,
+      "medium": "raster",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "how-title",
+      "kind": "text",
+      "note": "How it works section heading",
+      "box": {
+        "x": 0.419921875,
+        "y": 0.927734375,
+        "w": 0.16080729166666666,
+        "h": 0.0361328125
+      },
+      "px": {
+        "x": 645,
+        "y": 950,
+        "w": 247,
+        "h": 37
+      },
+      "aspect": 6.6757,
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    }
+  ],
+  "mediaManifest": "lib/marketing-media.json"
+}

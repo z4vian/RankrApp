@@ -1,57 +1,14 @@
-/**
- * app/terms.tsx — Terms of Service screen.
- *
- * For beta. Real copy needs to be drafted by counsel before public launch.
- * Includes the standard clauses required for App Store / Play Store
- * approval of a UGC app — content rules + reporting + termination.
- */
-
 import { LegalDocument } from '@/components';
-
+import { LEGAL_VERSION, OPERATOR_NAME } from '@/lib/legal';
 export default function TermsScreen() {
-  return (
-    <LegalDocument
-      title="Terms of Service"
-      lastUpdated="2026-06-09"
-      webUrl="https://rankrapp.com/terms"
-      sections={[
-        {
-          heading: 'Acceptance',
-          body: 'By using Rankr you agree to these terms. If you don\'t agree, don\'t use the app. We may update these terms; we\'ll notify you in-app of material changes.',
-        },
-        {
-          heading: 'Your account',
-          body: 'You must be at least 13 years old. You\'re responsible for your account and the content you post. Don\'t impersonate someone else or use the app on behalf of another person without their permission.',
-        },
-        {
-          heading: 'Your content',
-          body: 'You own the lists, rankings, posts, comments, and photos you create. By posting Public content you grant Rankr a non-exclusive license to display it to other users inside the app. You can delete your content at any time, which revokes that license going forward.',
-        },
-        {
-          heading: 'Content rules',
-          body: 'No hate speech, harassment, threats, sexual content involving minors, or content that infringes others\' intellectual property. No spam, fake accounts, or automated posting. We reserve the right to remove content and suspend accounts that violate these rules, with or without notice.',
-        },
-        {
-          heading: 'Reporting & blocking',
-          body: 'You can report any user, list, post, or comment that violates these rules. You can block any user to hide their content and prevent them from interacting with you. We review reports and act on them on a best-effort basis.',
-        },
-        {
-          heading: 'Third-party content',
-          body: 'Rankr displays metadata about movies, TV shows, games, music, and books sourced from third-party APIs (TMDB, RAWG, iTunes, Google Books). Rights to that metadata belong to the respective providers. We do not host the underlying media.',
-        },
-        {
-          heading: 'Termination',
-          body: 'You can delete your account at any time from Profile > Settings > Delete account. We can suspend or terminate accounts that violate these terms, with or without notice depending on severity.',
-        },
-        {
-          heading: 'Disclaimers',
-          body: 'Rankr is provided "as is" without warranties. We work hard to keep the app available and secure but we don\'t guarantee uninterrupted service or data integrity. To the extent permitted by law, our liability for any claim arising from the app is limited.',
-        },
-        {
-          heading: 'Contact',
-          body: 'Questions about these terms? Email support@rankrapp.com.',
-        },
-      ]}
-    />
-  );
+  return <LegalDocument title="Terms & Conditions" lastUpdated={LEGAL_VERSION} webUrl={null} sections={[
+    { heading: 'Using Rankr', body: `These terms govern your use of Rankr, provided by ${OPERATOR_NAME}. By creating an account or using the service, you agree to these terms. If you do not agree, do not create an account or use the service. Our Privacy Policy explains how information is handled; acknowledging it is not permission for optional marketing or tracking.` },
+    { heading: 'Eligibility and accounts', body: 'You must be at least 13 years old. If you are below the age of majority where you live, use Rankr only with a parent or guardian’s permission. Provide accurate account information, protect your password, and do not impersonate others. You are responsible for activity you authorize through your account. Contact us if you suspect unauthorized access.' },
+    { heading: 'Your content and visibility', body: 'You retain ownership of your original content. You give Rankr a non-exclusive license to store, process, and display that content as needed to provide the features and visibility you select. This license does not transfer ownership. You must have the rights necessary to upload what you share. Public content can be seen and copied by others. Uploaded image URLs are currently public even when associated text is private; do not upload confidential images.' },
+    { heading: 'Community rules', body: 'Do not harass, threaten, impersonate, spam, post illegal content, exploit children, or infringe privacy or intellectual property rights. Do not attempt to access other people’s private data, bypass access controls, or disrupt the service. Use reporting and blocking tools for unwanted interactions. Reports may lead to content removal or account restrictions.' },
+    { heading: 'Media and recommendations', body: 'Rankr organizes opinions and metadata; it does not provide ownership of, or access to, the underlying songs, films, games, television programs, or books. Artwork and metadata belong to their respective owners and providers. Rankings and recommendations are subjective and may contain errors. External services operate under their own terms.' },
+    { heading: 'Availability and changes', body: 'Rankr is a developing side project. Features may change, fail, or become unavailable. Keep a copy of content that matters to you. Where permitted by applicable law, the service is provided as available and without warranties of uninterrupted availability or accuracy. Nothing in these terms excludes rights or liability that cannot legally be excluded.' },
+    { heading: 'Ending use and resolving issues', body: 'You can stop using Rankr at any time and request account deletion in Profile settings. We may restrict access to address violations, security risks, or legal requirements. Contact us to question a restriction, report infringement, or resolve a problem. Removal and retention are described in the Privacy Policy.' },
+    { heading: 'Updates and contact', body: 'The date above identifies this version. We will provide notice of significant changes where required by law. Contact the operator using the option below with questions about these terms.' },
+  ]} />;
 }

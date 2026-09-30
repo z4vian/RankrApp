@@ -1,0 +1,3 @@
+Initial fresh review: disposition fix. Visual composition, typography, real-media adaptation and responsive hierarchy accepted. Two material findings: reconcile stale tool/spec evidence without claiming gate pass; separate signup password hint from eye control. Generic fresh subagent used the shipped degraded contract because named agent definitions are not exposed by this harness. Separate hero diff was not captured.
+
+Final verdict: **ship**, limited to scoring the two requested fixes. Both resolved: truthful manual reconciliation with original tool evidence preserved; signup password hint and visibility control separated. All seven recaptures valid; reviewer saw no regressions from this fix batch. Automated phase gates remain unpassed.

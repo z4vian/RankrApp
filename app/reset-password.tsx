@@ -212,7 +212,7 @@ export default function ResetPasswordScreen() {
           ) : setupState.kind === 'error' ? (
             <View style={styles.form}>
               <View style={styles.errorBox}>
-                <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+                <Ionicons name="alert-circle-outline" size={16} color="#ff8585" />
                 <Text style={styles.errorText}>{setupState.message}</Text>
               </View>
               <TouchableOpacity
@@ -234,7 +234,7 @@ export default function ResetPasswordScreen() {
             <View style={styles.form}>
               {error ? (
                 <View style={styles.errorBox}>
-                  <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+                  <Ionicons name="alert-circle-outline" size={16} color="#ff8585" />
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
@@ -246,13 +246,13 @@ export default function ResetPasswordScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Choose a new password"
-                    placeholderTextColor="#555"
+                    placeholderTextColor="#a6a4b3"
                     value={newPassword}
                     onChangeText={setNewPassword}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    autoComplete="password-new"
+                    autoComplete={'new-password' as any}
                     textContentType="newPassword"
                     accessibilityLabel="New password"
                   />
@@ -286,13 +286,13 @@ export default function ResetPasswordScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Re-enter your new password"
-                    placeholderTextColor="#555"
+                    placeholderTextColor="#a6a4b3"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    autoComplete="password-new"
+                    autoComplete={'new-password' as any}
                     textContentType="newPassword"
                     returnKeyType="done"
                     onSubmitEditing={handleSubmit}
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a1a1a', borderRadius: 10,
     padding: 12, borderWidth: 1, borderColor: '#3a2020',
   },
-  errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
+  errorText: { color: '#ff8585', fontSize: 14, flex: 1 },
 
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',

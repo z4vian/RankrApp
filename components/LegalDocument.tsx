@@ -1,21 +1,8 @@
-/**
- * components/LegalDocument.tsx
- *
- * Shared rendering shell for legal docs (Privacy, Terms). Each variant is a
- * thin wrapper screen that imports this component with its own document
- * config. Kept in one place so the visual presentation, last-updated stamp,
- * and "open external" link affordance stay consistent.
- *
- * The actual legal content is intentionally short and placeholder-y — REAL
- * copy should be drafted by counsel (or pulled from a Termly / iubenda
- * template) before production launch. For beta, this satisfies the in-app
- * link requirement and gives testers something to read.
- */
-
+import { SUPPORT_EMAIL } from '@/lib/legal';
 import { colors, radius, spacing, typography } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -48,7 +35,7 @@ export function LegalDocument({
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/landing')}
           hitSlop={12}
           style={styles.backBtn}
           accessibilityRole="button"
@@ -56,7 +43,7 @@ export function LegalDocument({
         >
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <Text accessibilityRole="header" style={styles.headerTitle}>{title}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -88,14 +75,18 @@ export function LegalDocument({
 
         {sections.map((s) => (
           <View key={s.heading} style={styles.section}>
-            <Text style={styles.sectionHeading}>{s.heading}</Text>
+            <Text accessibilityRole="header" style={styles.sectionHeading}>{s.heading}</Text>
             <Text style={styles.sectionBody}>{s.body}</Text>
           </View>
         ))}
 
-        <Text style={styles.footer}>
-          Questions? Email us at support@rankrapp.com.
-        </Text>
+        <View style={{ gap: 16 }}>
+          {SUPPORT_EMAIL ? <Link href={`mailto:${SUPPORT_EMAIL}`} style={styles.webRowText}>Contact: {SUPPORT_EMAIL}</Link> : <Text style={styles.footer}>A public contact email has not been configured yet. You can send a privacy or support request using feedback below.</Text>}
+          <Link href="/feedback" style={styles.webRowText}>Send feedback or a privacy request</Link>
+          <Link href="/privacy" style={styles.webRowText}>Privacy Policy</Link>
+          <Link href="/terms" style={styles.webRowText}>Terms &amp; Conditions</Link>
+          <Link href="/cookies" style={styles.webRowText}>Cookie Policy</Link>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -126,8 +117,11 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 40 },
   scroll: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl,
   },
   stamp: {

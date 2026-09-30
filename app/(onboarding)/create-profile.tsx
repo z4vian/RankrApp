@@ -306,7 +306,7 @@ export default function CreateProfileScreen() {
             <>
               <View style={styles.inputWrapper}>
                 <Text style={styles.atSign}>@</Text>
-                <TextInput
+                <TextInput accessibilityLabel="username"
                   style={styles.input}
                   placeholder="username"
                   placeholderTextColor={colors.textPlaceholder}
@@ -340,7 +340,7 @@ export default function CreateProfileScreen() {
           <Text style={styles.fieldLabel}>Display name</Text>
           <View style={styles.inputWrapper}>
             <Ionicons name="person-outline" size={18} color={colors.textMuted} style={styles.inputIcon} />
-            <TextInput
+            <TextInput accessibilityLabel="Your name"
               style={styles.input}
               placeholder="Your name"
               placeholderTextColor={colors.textPlaceholder}
@@ -352,7 +352,7 @@ export default function CreateProfileScreen() {
           {/* Bio */}
           <Text style={styles.fieldLabel}>Bio</Text>
           <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-            <TextInput
+            <TextInput accessibilityLabel="A line or two about your taste..."
               style={[styles.input, styles.textArea]}
               placeholder="A line or two about your taste..."
               placeholderTextColor={colors.textPlaceholder}

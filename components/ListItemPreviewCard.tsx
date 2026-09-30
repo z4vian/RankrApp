@@ -37,7 +37,7 @@ export function ListItemPreviewCard({
     <View style={[styles.container, style]}>
       <View style={styles.thumbWrap}>
         {image_url ? (
-          <Image source={{ uri: image_url }} style={styles.thumb} contentFit="cover" />
+          <Image accessibilityLabel={`Cover artwork for ${title}`} source={{ uri: image_url }} style={styles.thumb} contentFit="cover" />
         ) : (
           <View style={[styles.thumb, styles.thumbPlaceholder]}>
             <Ionicons name={categoryIcon(category)} size={22} color={colors.purpleLight} />

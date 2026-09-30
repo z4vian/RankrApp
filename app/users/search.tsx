@@ -70,7 +70,7 @@ export default function UserSearchScreen() {
           color={colors.textMuted}
           style={{ marginRight: spacing.sm }}
         />
-        <TextInput
+        <TextInput accessibilityLabel="Search by username or name"
           style={styles.input}
           placeholder="Search by username or name"
           placeholderTextColor={colors.textPlaceholder}

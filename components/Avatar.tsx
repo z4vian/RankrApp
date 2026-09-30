@@ -22,6 +22,7 @@ export function Avatar({ uri, name, size = 48, style }: AvatarProps) {
     return (
       <View style={[circleStyle, styles.imageWrap, style]}>
         <Image
+          accessibilityLabel={name ? `${name}’s profile photo` : 'Profile photo'}
           source={{ uri }}
           style={styles.imageFill}
           contentFit="cover"

@@ -1,0 +1,133 @@
+{
+  "tool": "build-phase",
+  "version": 2,
+  "startedAt": "2026-09-29T20:26:41.387Z",
+  "comp": ".impeccable/mocks/approved-homepage.png",
+  "direction": "a34c4fc3",
+  "breakpoint": 1536,
+  "artifact": "app/landing.web.tsx",
+  "phase": "review",
+  "phases": {
+    "comps": {
+      "status": "open",
+      "openedAt": "2026-09-29T20:26:41.387Z",
+      "closedAt": null,
+      "attempts": 1,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": {
+        "ok": false,
+        "reasons": [
+          "1 comp under .impeccable/mocks; the comp round puts three compositional options of the chosen direction in front of the user (reference/visualize.md). Generate the missing ones (harness image tool or generate-image.mjs), each with a .json sidecar holding its prompt."
+        ],
+        "summary": "1 comps, 1 approved",
+        "approved": ".impeccable/mocks/approved-homepage.png",
+        "at": "2026-09-29T20:27:16.295Z"
+      },
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "spec": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "plates": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "hero": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "sections": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "motion": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "responsive": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-evidence"
+    },
+    "review": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        "Manual reconciliation; preserved status/gate fields are historical tool output, not current manual completion status."
+      ],
+      "gate": null,
+      "forced": null,
+      "manualStatus": "completed-by-reviewer"
+    }
+  },
+  "finish": {
+    "disposition": "ship",
+    "scope": "Two reviewer-requested material fixes scored resolved; not a fresh whole-surface review",
+    "record": ".impeccable/review/finish-review.md",
+    "automatedGatesPassed": false
+  },
+  "manualReconciliation": {
+    "date": "2026-09-29",
+    "automatedGatesPassed": false,
+    "reason": "User explicitly approved the latest canon image in chat; extra variation round bypassed under user instruction. Original tool state retained in state-tool-original.json. No automated gate pass is inferred.",
+    "mediaOverride": "User requested real legally reusable media; see lib/marketing-media.json and docs/media-license-evidence.json.",
+    "evidence": [
+      ".impeccable/review/browser-report.json",
+      ".impeccable/review/diff/final/report.json"
+    ],
+    "heroDiff": "No separate historical hero diff was captured. Final comparison covers hero; no fabricated earlier artifact."
+  }
+}

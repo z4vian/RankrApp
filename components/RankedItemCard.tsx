@@ -108,7 +108,7 @@ export function RankedItemCard({
       >
         <View style={styles.thumbWrap}>
           {itemImageUrl ? (
-            <Image source={{ uri: itemImageUrl }} style={styles.thumb} contentFit="cover" />
+            <Image accessibilityLabel={`Cover artwork for ${itemTitle}`} source={{ uri: itemImageUrl }} style={styles.thumb} contentFit="cover" />
           ) : (
             <View style={[styles.thumb, styles.thumbPlaceholder]}>
               <Ionicons

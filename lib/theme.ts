@@ -37,8 +37,8 @@ export const colors = {
   // ---- Text ----
   text: '#ffffff',
   textSecondary: '#aaaaaa',
-  textMuted: '#777777',    // bumped from #666 — old value was hard to read
-  textPlaceholder: '#555555',
+  textMuted: '#a6a4b3',    // bumped from #666 — old value was hard to read
+  textPlaceholder: '#a6a4b3',
 
   // ---- Brand ----
   purple: '#7C3AED',

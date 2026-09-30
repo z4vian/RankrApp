@@ -564,7 +564,7 @@ export default function ListDetail() {
                     color={colors.textMuted}
                     style={{ marginRight: 8 }}
                   />
-                  <TextInput
+                  <TextInput accessibilityLabel="Search items"
                     style={styles.searchInput}
                     placeholder="Search items"
                     placeholderTextColor={colors.textMuted}
@@ -739,7 +739,7 @@ export default function ListDetail() {
               )}
 
               <Text style={styles.sectionLabel}>Notes</Text>
-              <TextInput
+              <TextInput accessibilityLabel="Write your thoughts..."
                 style={styles.notesInput}
                 placeholder="Write your thoughts..."
                 placeholderTextColor="#555"
@@ -820,7 +820,7 @@ export default function ListDetail() {
               </View>
 
               <Text style={styles.sectionLabel}>Title</Text>
-              <TextInput
+              <TextInput accessibilityLabel="My favourite movies"
                 style={styles.listEditInput}
                 placeholder="My favourite movies"
                 placeholderTextColor="#555"
@@ -831,7 +831,7 @@ export default function ListDetail() {
               <Text style={styles.fieldHint}>{editTitle.length}/80</Text>
 
               <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Description</Text>
-              <TextInput
+              <TextInput accessibilityLabel="A short description (optional)"
                 style={[styles.listEditInput, styles.listEditTextarea]}
                 placeholder="A short description (optional)"
                 placeholderTextColor="#555"

@@ -391,7 +391,7 @@ export default function MoviesSearch() {
       activeOpacity={0.8}
     >
       {item.poster_path ? (
-        <Image source={{ uri: `https://image.tmdb.org/t/p/w92${item.poster_path}` }} style={styles.poster} />
+        <Image accessibilityLabel={`Poster for ${item.title}`} source={{ uri: `https://image.tmdb.org/t/p/w92${item.poster_path}` }} style={styles.poster} />
       ) : (
         <View style={styles.noPoster}>
           <Ionicons name="image-outline" size={20} color="#555" />
@@ -408,7 +408,7 @@ export default function MoviesSearch() {
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.container}>
-        <TextInput
+        <TextInput accessibilityLabel="Search movies..."
           style={styles.input}
           placeholder="Search movies..."
           placeholderTextColor="#555"
@@ -455,7 +455,7 @@ export default function MoviesSearch() {
             <>
               <View style={styles.sheetHeader}>
                 {selectedItem.image_url ? (
-                  <Image source={{ uri: selectedItem.image_url }} style={styles.sheetImage} />
+                  <Image accessibilityLabel={`Cover artwork for ${selectedItem.title}`} source={{ uri: selectedItem.image_url }} style={styles.sheetImage} />
                 ) : (
                   <View style={styles.sheetImagePlaceholder}>
                     <Ionicons name="image-outline" size={28} color="#555" />
@@ -542,7 +542,7 @@ export default function MoviesSearch() {
                 <>
                   <Text style={styles.sheetQuestion}>Add notes or photos</Text>
                   <Text style={styles.sheetSubtext}>Optional — adding to: {selectedList?.title}</Text>
-                  <TextInput
+                  <TextInput accessibilityLabel="Write your thoughts..."
                     style={styles.notesInput}
                     placeholder="Write your thoughts..."
                     placeholderTextColor="#555"
@@ -558,7 +558,7 @@ export default function MoviesSearch() {
                   {photos.length > 0 && (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                       {photos.map((uri, i) => (
-                        <Image key={i} source={{ uri }} style={styles.photoThumb} />
+                        <Image accessibilityLabel={`Attached photo ${i + 1}`} key={i} source={{ uri }} style={styles.photoThumb} />
                       ))}
                     </ScrollView>
                   )}

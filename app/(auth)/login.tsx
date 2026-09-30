@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 
@@ -23,22 +23,27 @@ export default function Login() {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
+    if (loading) return;
     setLoading(true);
     setError('');
+    try {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setError(error.message);
     else router.replace('/(tabs)' as any);
-    setLoading(false);
+    } catch { setError('Could not sign in. Check your connection and try again.'); }
+    finally { setLoading(false); }
   };
 
   const handleGoogleLogin = async () => {
-    setError('');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'rankr://auth/callback' },
-    });
-    if (error) setError(error.message);
-    else if (data?.url) await WebBrowser.openAuthSessionAsync(data.url, 'rankr://auth/callback');
+    if (loading) return;
+    setError(''); setLoading(true);
+    try {
+      const redirectTo = Platform.OS === 'web' ? `${window.location.origin}/` : 'rankr://auth/callback';
+      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+      if (error) throw error;
+      if (Platform.OS !== 'web' && data?.url) await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    } catch { setError('Could not start Google sign-in. Please try again.'); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -46,6 +51,7 @@ export default function Login() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       {/* Logo area */}
       <View style={styles.logoArea}>
         <View style={styles.logoCircle}>
@@ -58,8 +64,8 @@ export default function Login() {
       {/* Form */}
       <View style={styles.form}>
         {error ? (
-          <View style={styles.errorBox}>
-            <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+          <View accessibilityRole="alert" style={styles.errorBox}>
+            <Ionicons name="alert-circle-outline" size={16} color="#ff8585" />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -67,11 +73,11 @@ export default function Login() {
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>Email</Text>
           <View style={[styles.inputWrapper, focused === 'email' && styles.inputWrapperFocused]}>
-            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.purpleLight : colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="you@example.com"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a6a4b3"
               value={email}
               onChangeText={setEmail}
               onFocus={() => setFocused('email')}
@@ -90,11 +96,11 @@ export default function Login() {
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>Password</Text>
           <View style={[styles.inputWrapper, focused === 'password' && styles.inputWrapperFocused]}>
-            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : '#555'} style={styles.inputIcon} />
+            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.purpleLight : colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Your password"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a6a4b3"
               value={password}
               onChangeText={setPassword}
               onFocus={() => setFocused('password')}
@@ -102,7 +108,7 @@ export default function Login() {
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
-              autoComplete="password"
+              autoComplete={'current-password' as any}
               textContentType="password"
               returnKeyType="go"
               onSubmitEditing={handleLogin}
@@ -167,7 +173,7 @@ export default function Login() {
         {/* Session 1 — legal footer. Tappable links into the public Privacy
             and Terms screens (no auth required). */}
         <View style={styles.legalRow}>
-          <Text style={styles.legalText}>By continuing you agree to our </Text>
+          <Text style={styles.legalText}>Read our </Text>
           <TouchableOpacity
             onPress={() => router.push('/terms' as any)}
             hitSlop={6}
@@ -188,12 +194,14 @@ export default function Login() {
           <Text style={styles.legalText}>.</Text>
         </View>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { flexGrow: 1, padding: 24, width: '100%', maxWidth: 500, alignSelf: 'center', justifyContent: 'center' },
 
   logoArea: { alignItems: 'center', marginBottom: 48 },
   logoCircle: {
@@ -204,7 +212,7 @@ const styles = StyleSheet.create({
   },
   logoText: { color: '#fff', fontSize: 40, fontWeight: 'bold' },
   appName: { color: '#fff', fontSize: 32, fontWeight: 'bold', marginBottom: 6 },
-  tagline: { color: '#555', fontSize: 15 },
+  tagline: { color: colors.textMuted, fontSize: 15 },
 
   form: { gap: 14 },
   field: { gap: 6 },
@@ -215,7 +223,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a1a1a', borderRadius: 10,
     padding: 12, borderWidth: 1, borderColor: '#3a2020',
   },
-  errorText: { color: '#ef4444', fontSize: 14, flex: 1 },
+  errorText: { color: '#ff8585', fontSize: 14, flex: 1 },
 
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
@@ -244,7 +252,7 @@ const styles = StyleSheet.create({
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   divider: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { color: '#555', fontSize: 13 },
+  dividerText: { color: colors.textMuted, fontSize: 13 },
 
   googleButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -254,7 +262,7 @@ const styles = StyleSheet.create({
   googleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
-  switchText: { color: '#555', fontSize: 14 },
+  switchText: { color: colors.textMuted, fontSize: 14 },
   switchLink: { color: colors.purpleLight, fontSize: 14, fontWeight: '600' },
 
   legalRow: {
@@ -264,6 +272,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  legalText: { color: '#666', fontSize: 12 },
+  legalText: { color: colors.textMuted, fontSize: 12 },
   legalLink: { color: colors.purpleLight, fontSize: 12, fontWeight: '600' },
 });

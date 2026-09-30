@@ -1,53 +1,15 @@
-/**
- * app/privacy.tsx — Privacy Policy screen.
- *
- * For beta. Real copy needs to be drafted by counsel before public launch.
- * The screen also links out to a hosted version at rankrapp.com/privacy
- * (placeholder URL — update when the marketing site exists).
- */
-
 import { LegalDocument } from '@/components';
-
+import { LEGAL_VERSION, OPERATOR_NAME } from '@/lib/legal';
 export default function PrivacyScreen() {
-  return (
-    <LegalDocument
-      title="Privacy Policy"
-      lastUpdated="2026-06-09"
-      webUrl="https://rankrapp.com/privacy"
-      sections={[
-        {
-          heading: 'Summary',
-          body: 'Rankr collects only the data needed to run the app: your email, the lists and rankings you create, and the social actions you take (follows, likes, comments). We don\'t sell your data. You can export or delete it from Profile > Settings at any time.',
-        },
-        {
-          heading: 'What we collect',
-          body: 'Account info you provide (email, username, display name, optional bio + avatar). Content you create (lists, ranked items, posts, comments, notes, photos). Activity (follows, likes, items you save). Device data (push token if you opt in, anonymous crash reports). When you sign in with Google, we receive your name, email, and profile photo from Google.',
-        },
-        {
-          heading: 'How we use it',
-          body: 'To show you your data and your friends\' data inside the app, to generate recommendations for you, to send push notifications you have opted in to, and to fix bugs we discover from anonymous crash reports.',
-        },
-        {
-          heading: 'Public content',
-          body: 'Lists you mark as Public, posts, comments, and your profile (username, display name, avatar, bio) are visible to anyone using Rankr. Private lists and notes are visible only to you.',
-        },
-        {
-          heading: 'Third parties',
-          body: 'We use Supabase to store your data. We call third-party APIs (TMDB, RAWG, iTunes, Google Books) to look up movie/game/music/book metadata when you search — these requests do not include your account info. We use Expo to deliver push notifications.',
-        },
-        {
-          heading: 'Your rights',
-          body: 'You can export your data as JSON at any time from Profile > Settings > Export data. You can delete your account from Profile > Settings > Delete account — this permanently removes your profile, lists, items, posts, comments, and likes. We do not retain a copy.',
-        },
-        {
-          heading: 'Children',
-          body: 'Rankr is not intended for users under 13. If we learn we have collected data from a child under 13, we will delete it.',
-        },
-        {
-          heading: 'Changes',
-          body: 'If we make material changes to this policy, we will notify you in-app before the changes take effect.',
-        },
-      ]}
-    />
-  );
+  return <LegalDocument title="Privacy Policy" lastUpdated={LEGAL_VERSION} webUrl={null} sections={[
+    { heading: 'About this policy', body: `${OPERATOR_NAME} provides Rankr, a personal media-ranking and social app, initially offered in the United States. This policy describes the information used by the app and website.` },
+    { heading: 'Information you provide', body: 'Creating an email account requires an email address, password, and username. Google sign-in supplies account information authorized through Google, such as email, name, and profile image. Display name, biography, avatar, notes, photos, posts, and social activity are optional. We store the lists, comparisons, rankings, follows, likes, comments, reports, and feedback you choose to create. We record the terms version acknowledged during email signup. Do not include sensitive personal information in public content or feedback.' },
+    { heading: 'Why we use information', body: 'We use account information to authenticate you and recover your account; your saved content to maintain rankings, display lists, and generate recommendations; social activity to provide feeds and notifications; and reports and feedback to respond to problems and protect the service. We do not require a phone number, street address, contacts access, or precise location to rank media.' },
+    { heading: 'Public and private content', body: 'Your username and profile can be visible to other users. List and post visibility controls determine who can read that content in the app. Public content can be copied or shared by its viewers. Uploaded photos currently use public storage URLs: anyone with a photo URL can access that image, including images attached to private content. Do not upload confidential photos. A private list does not make its uploaded image URL private.' },
+    { heading: 'Service providers and external requests', body: 'Supabase processes authentication, database records, and uploaded images. The hosting provider serves the website. Searches request metadata from providers including TMDB, RAWG, Apple iTunes, and Google Books. Images may load directly from those providers. They receive the network information needed to respond, such as your IP address and requested resource; search providers also receive search terms. Google handles Google sign-in. Native push notifications use Expo if device permission is granted. These providers process information under their own terms and privacy notices.' },
+    { heading: 'Cookies, diagnostics, and tracking', body: 'Browser storage keeps you signed in. The ranking demo runs in memory and does not send your choices. This version does not include advertising trackers, third-party analytics, session replay, or automatic external crash reporting. Providers may keep operational access and security logs. Sending feedback is your choice; technical error details are excluded unless you explicitly include them. See the Cookie Policy for storage purposes and controls. We do not sell personal information or share it for cross-context behavioral advertising. Do Not Track and Global Privacy Control signals do not change this no-advertising behavior.' },
+    { heading: 'Retention and deletion', body: 'Account information and saved content are kept while needed to provide your account. You can remove content or request account deletion in Profile settings. Account deletion depends on the server-side deletion service. Uploaded files, reports, provider logs, and backups may require separate cleanup or expire under provider retention settings; do not assume they disappear instantly. We retain information only when needed for the service, security, resolving disputes, or legal obligations. Contact us if deletion fails or you need help removing an uploaded image.' },
+    { heading: 'Your choices and requests', body: 'Edit your profile and list visibility in the app. Profile settings includes a JSON export of profile, lists, ranked items, posts, and follows; that export does not currently cover every category of information. You may request access, correction, a fuller copy, or deletion using the contact option below. We may need to verify account ownership before fulfilling a request. Rights depend on applicable law. You can disable notifications in device settings and sign out or clear site storage on a shared device.' },
+    { heading: 'Children and changes', body: 'Rankr is intended for people age 13 and older, not children under 13. If you believe a child under 13 has provided personal information, contact us so we can investigate and remove it as appropriate. We update the date above when this policy changes and will provide additional notice when required by law.' },
+  ]} />;
 }
