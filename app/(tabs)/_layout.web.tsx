@@ -1,3 +1,4 @@
+import { BrandWordmark } from '@/components/BrandWordmark';
 /**
  * app/(tabs)/_layout.web.tsx
  *
@@ -27,7 +28,7 @@
  * File ownership: web-dev  — do NOT edit _layout.tsx (native/frontend-dev).
  */
 
-import { colors, glow } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 import { useResponsive } from '@/lib/responsive';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Slot, Tabs, useRouter, useSegments } from 'expo-router';
@@ -43,11 +44,11 @@ import {
 // ---------------------------------------------------------------------------
 // Design tokens (mirror _layout.tsx so both surfaces feel identical)
 // ---------------------------------------------------------------------------
-const PURPLE_TEXT = '#A78BFA';
-const SIDEBAR_BG = '#13131a';
-const SIDEBAR_BORDER = '#1e1e2a';
-const INACTIVE = '#a6a4b3';
-const INACTIVE_LABEL = '#a6a4b3';
+const PURPLE_TEXT = colors.purpleLight;
+const SIDEBAR_BG = colors.bgDeeper;
+const SIDEBAR_BORDER = colors.border;
+const INACTIVE = colors.textMuted;
+const INACTIVE_LABEL = colors.textMuted;
 
 // ---------------------------------------------------------------------------
 // Route definitions — order matches _layout.tsx
@@ -92,13 +93,14 @@ function SidebarItem({
       ]}
       accessibilityRole="button"
       accessibilityLabel={item.title}
+      accessibilityState={{ selected: focused }}
     >
       <View style={[sidebarStyles.accentBar, focused && sidebarStyles.accentBarActive]} />
       <View style={[sidebarStyles.iconWrap, focused && sidebarStyles.iconWrapActive]}>
         <Ionicons
           name={focused ? item.iconFocused : item.iconDefault}
           size={20}
-          color={focused ? colors.purple : INACTIVE}
+          color={focused ? colors.purpleLight : INACTIVE}
         />
       </View>
       <Text style={[sidebarStyles.navLabel, focused && sidebarStyles.navLabelActive]}>
@@ -121,7 +123,7 @@ function Sidebar({
   return (
     <View style={sidebarStyles.sidebar}>
       <View style={sidebarStyles.wordmark}>
-        <Text style={sidebarStyles.wordmarkText}>Rankr</Text>
+        <BrandWordmark />
       </View>
 
       <View style={sidebarStyles.navList}>
@@ -153,14 +155,14 @@ function MobileTabs() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.bgDeeper,
-          borderTopColor: '#1e1e2a',
+          borderTopColor: colors.borderSoft,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 70,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          height: 82,
+          paddingBottom: 12,
           paddingTop: 10,
           elevation: 0,
         },
-        tabBarActiveTintColor: colors.purple,
+        tabBarActiveTintColor: colors.purpleLight,
         tabBarInactiveTintColor: INACTIVE,
         tabBarLabelStyle: {
           fontSize: 11,
@@ -200,7 +202,7 @@ function MobileTabs() {
               <Ionicons name="search" color={focused ? '#fff' : INACTIVE} size={22} />
             </View>
           ),
-          tabBarLabelStyle: { display: 'none' },
+
         }}
       />
       <Tabs.Screen
@@ -285,7 +287,6 @@ export default function TabLayoutWeb() {
   // on the deployed Vercel site.
   useEffect(() => {
     if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-console
       console.log('[layout]', {
         hasMounted,
         width,
@@ -320,7 +321,9 @@ export default function TabLayoutWeb() {
   // without warnings, then immediately re-render once hasMounted flips.
   // -------------------------------------------------------------------
   if (!hasMounted) {
-    return <MobileTabs />;
+    // Mount one navigator only after viewport resolution. Switching a mounted
+    // Tabs navigator to Slot during hydration resets nested desktop deep links.
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   }
 
   // -------------------------------------------------------------------
@@ -358,18 +361,18 @@ const shellStyles = StyleSheet.create({
   desktopShell: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#0f0f13',
+    backgroundColor: colors.bg,
     minHeight: '100%' as any,
   },
   contentColumn: {
     flex: 1,
-    backgroundColor: '#0f0f13',
+    backgroundColor: colors.bg,
   },
 });
 
 const sidebarStyles = StyleSheet.create({
   sidebar: {
-    width: 240,
+    width: 224,
     backgroundColor: SIDEBAR_BG,
     borderRightWidth: 1,
     borderRightColor: SIDEBAR_BORDER,
@@ -409,14 +412,14 @@ const sidebarStyles = StyleSheet.create({
     backgroundColor: colors.purpleSoft,
   },
   navItemHovered: {
-    backgroundColor: '#1e1e2a',
+    backgroundColor: colors.borderSoft,
   },
   navItemPressed: {
     backgroundColor: '#252535',
   },
 
   accentBar: {
-    width: 3,
+    width: 0,
     height: '100%' as any,
     borderRadius: 2,
     backgroundColor: 'transparent',
@@ -440,7 +443,7 @@ const sidebarStyles = StyleSheet.create({
 
   navLabel: {
     color: INACTIVE_LABEL,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
   },
   navLabelActive: {
@@ -456,7 +459,7 @@ const sidebarStyles = StyleSheet.create({
     paddingTop: 16,
   },
   shortcutText: {
-    color: '#444',
+    color: colors.textMuted,
     fontSize: 11,
   },
 });
@@ -473,9 +476,9 @@ const mobileStyles = StyleSheet.create({
     backgroundColor: colors.purpleSoft,
   },
   searchWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: '#1e1e2e',
     justifyContent: 'center',
     alignItems: 'center',
@@ -486,6 +489,6 @@ const mobileStyles = StyleSheet.create({
   searchActive: {
     backgroundColor: colors.purple,
     borderColor: colors.purple,
-    ...glow.purpleStrong,
+
   },
 });

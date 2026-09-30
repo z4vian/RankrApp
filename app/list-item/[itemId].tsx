@@ -6,6 +6,7 @@
  * with backend-dev's engagement helpers.
  */
 
+import { UserPhoto } from '@/components/UserPhoto';
 import {
   addComment,
   deleteComment,
@@ -503,9 +504,10 @@ export default function ListItemDetailScreen() {
               contentContainerStyle={styles.photoStrip}
             >
               {detail.photo_urls.map((uri, idx) => (
-                <Image
+                <UserPhoto
                   key={`${uri}-${idx}`}
-                  source={{ uri }}
+                  reference={uri}
+                  label={`Attached photo ${idx + 1}`}
                   style={styles.photoThumb}
                 />
               ))}

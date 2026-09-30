@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import React from 'react';
 import {
+  Platform,
   StyleProp,
   StyleSheet,
   Text,
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     ...typography.bodyBold,
-    color: colors.text,
+    color: Platform.OS === 'web' ? colors.bg : colors.text,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },

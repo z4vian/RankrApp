@@ -1,27 +1,6 @@
-/**
- * lib/account.ts
- *
- * Account-level helpers for the current user:
- *  - `exportUserData` — assembles a JSON bundle of all the user's own data
- *    for "download my data" UX.
- *  - `userDataToJSON` — pretty-prints an `ExportedUserData` bundle for
- *    sharing/saving.
- *  - `requestAccountDeletion` — best-effort client-side cleanup of the
- *    user's owned rows, then invokes the `delete-account` Edge Function
- *    (source in `docs/edge-functions/delete-account.ts`) which deletes the
- *    `auth.users` row via the service-role admin API. CASCADE FKs handle
- *    any orphan rows that survived the client-side pass.
- *
- * Edge-function dependency:
- *   `requestAccountDeletion` calls `supabase.functions.invoke('delete-account')`.
- *   The function must be deployed first; see `docs/edge-functions/README.md`.
- *
- * Error policy:
- *   - `exportUserData` never throws — degrades to empty arrays on partial
- *     query failures so the user always gets *some* download.
- *   - `requestAccountDeletion` THROWS with a friendly message on hard failure
- *     (no session, edge-function rejected, network error) so the UI can show
- *     a real "couldn't delete" toast and not falsely tell the user it worked.
+/** Account export (legacy partial bundle) and authoritative server deletion.
+ * Export completeness limitations are tracked in docs/BACKEND-REVIEW.md.
+ * Deletion never removes client rows before the server acknowledges success.
  */
 
 import { supabase } from '@/lib/supabase';
@@ -240,103 +219,11 @@ export function userDataToJSON(data: ExportedUserData): string {
   return JSON.stringify(data, null, 2);
 }
 
-/**
- * Request permanent deletion of the current user's account.
- *
- * Flow:
- *   1. Resolve the current user (throw "You must be signed in." on miss).
- *   2. Best-effort client-side cleanup of the user's own rows, in dependency
- *      order so RLS doesn't reject anything:
- *        a. posts          (top-level, may reference list_items via SET NULL)
- *        b. comments       (depend on list_items)
- *        c. likes          (depend on list_items)
- *        d. watched_with   (depends on list_items + tagged users)
- *        e. list_items     (RLS via parent list ownership)
- *        f. lists          (the parent rows)
- *        g. push_tokens    (per-device tokens)
- *        h. profile        (the per-user row)
- *      Each step logs but does NOT throw on error — CASCADE FKs in
- *      `auth.users` cleanup (step 3) will sweep up anything that survived.
- *   3. Invoke the `delete-account` Edge Function via
- *      `supabase.functions.invoke('delete-account')`. This is the authoritative
- *      step: it deletes the `auth.users` row using the service-role admin
- *      API, and CASCADE FKs propagate to every Phase-1-through-5 table.
- *      Throws on edge-function error with a friendly message.
- *   4. Sign out so the app's auth listener routes to the login screen.
- *
- * Throws:
- *   - "You must be signed in."                            if no session.
- *   - "Couldn't delete your account. Please try again."   on edge-function or
- *                                                         network failure.
- */
+/** The server deletes storage first, then auth + cascading rows. Retry on failure. */
 export async function requestAccountDeletion(): Promise<void> {
-  const { data: userResult, error: authError } = await supabase.auth.getUser();
-  if (authError || !userResult.user) {
-    throw new Error('You must be signed in.');
-  }
-  const me = userResult.user.id;
-
-  // Step 2: best-effort client-side cleanup in dependency order. We do NOT
-  // throw on any per-table error here — the edge function's auth.users
-  // deletion + CASCADE FKs is the authoritative cleanup. Logging only.
-  type StepResult = { error: { message?: string } | null };
-  const log = (label: string, res: StepResult) => {
-    if (res.error) console.error('[requestAccountDeletion]', label, res.error.message);
-  };
-
-  // a. posts authored by me
-  log('posts', await supabase.from('posts').delete().eq('user_id', me));
-  // b. comments authored by me
-  log('comments', await supabase.from('comments').delete().eq('user_id', me));
-  // c. likes by me
-  log('likes', await supabase.from('likes').delete().eq('user_id', me));
-  // d. watched_with where I'm the tagged user (the only DELETE I can issue
-  //    here under RLS for that table — tags on my own items are removed via
-  //    the list_items CASCADE in step (e)/(f)).
-  log(
-    'watched_with',
-    await supabase.from('watched_with').delete().eq('tagged_user_id', me)
-  );
-  // e. list_items: RLS lets me delete items whose parent list I own. We
-  //    don't have user_id on list_items directly, so we use a two-step:
-  //    fetch list ids, then delete items by list_id IN (...).
-  const { data: myListIds } = await supabase
-    .from('lists')
-    .select('id')
-    .eq('user_id', me);
-  const listIds = (myListIds ?? [])
-    .map((r) => (r as { id?: unknown }).id)
-    .filter((id): id is string => typeof id === 'string');
-  if (listIds.length > 0) {
-    log(
-      'list_items',
-      await supabase.from('list_items').delete().in('list_id', listIds)
-    );
-  }
-  // f. lists themselves
-  log('lists', await supabase.from('lists').delete().eq('user_id', me));
-  // g. push_tokens for this user (Phase 5)
-  log(
-    'push_tokens',
-    await supabase.from('push_tokens').delete().eq('user_id', me)
-  );
-  // h. profile row
-  log('profile', await supabase.from('profiles').delete().eq('id', me));
-
-  // Step 3: invoke the edge function for the auth.users deletion. This is
-  // the authoritative step — without it the user can sign back in and see
-  // a half-empty account.
-  const { error: fnError } = await supabase.functions.invoke('delete-account');
-  if (fnError) {
-    console.error('[requestAccountDeletion] edge function', fnError.message);
-    throw new Error("Couldn't delete your account. Please try again.");
-  }
-
-  // Step 4: sign out so the root auth listener routes to the login screen.
-  // signOut errors are non-fatal at this point — the account is already gone
-  // server-side — but we log them.
-  const { error: signOutError } = await supabase.auth.signOut();
-  if (signOutError) {
-    console.error('[requestAccountDeletion] signOut', signOutError.message);
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error('You must be signed in.');
+  const { data, error } = await supabase.functions.invoke('delete-account');
+  if (error || data?.ok !== true) throw new Error("Couldn't finish deleting your account. Please try again.");
+  await supabase.auth.signOut({ scope: 'local' });
 }

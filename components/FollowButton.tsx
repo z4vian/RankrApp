@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { Platform, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { Button } from './Button';
-import { colors, radius, typography } from '@/lib/theme';
+import { radius } from '@/lib/theme';
 
 export interface FollowButtonProps {
   following: boolean;
@@ -44,8 +44,8 @@ export function FollowButton({
 
 const styles = StyleSheet.create({
   sm: {
-    height: 36,
-    borderRadius: radius.pill,
+    height: Platform.OS === 'web' ? 44 : 36,
+    borderRadius: Platform.OS === 'web' ? 8 : radius.pill,
     paddingHorizontal: 16,
     // Override the label font inside Button via composition — Button exposes no label-style prop,
     // so we accept the default bodyBold size (15) at sm; override at call-site if desired.

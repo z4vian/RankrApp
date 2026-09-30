@@ -1,3 +1,5 @@
+import { Platform, type TextStyle } from 'react-native';
+
 /**
  * Design tokens — single source of truth for the Rankr visual system.
  *
@@ -21,7 +23,7 @@
  *    sentiment, pull from `colors.sentiment.*`. No inline hex.
  */
 
-export const colors = {
+const nativeColors = {
   // ---- Surfaces (three-tier elevation) ----
   bg: '#0f0f13',           // root background
   bgDeeper: '#13131a',     // chrome (tab bar, header rails)
@@ -77,6 +79,15 @@ export const colors = {
   imageBorder: 'rgba(255,255,255,0.08)',
 } as const;
 
+// Web extends the approved landing palette; native retains its existing tokens.
+export const colors = Platform.OS === 'web' ? {
+  ...nativeColors,
+  bg: '#14181c', bgDeeper: '#171b20', card: '#1b2026', cardElevated: '#232831', overlay: '#1b2026',
+  border: '#373d48', borderSoft: '#2b313a', borderStrong: '#545966',
+  text: '#f4f4f6', textSecondary: '#b7bac9', textMuted: '#b7bac9', textPlaceholder: '#b7bac9',
+  purple: '#7651e4', purpleLight: '#b19afa', purpleSoft: '#30263e', purpleDeep: '#6540cd',
+} : nativeColors;
+
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -113,7 +124,6 @@ export const typography = {
  * Kept outside the typography `as const` block so the inner array stays
  * mutable — react-native's TextStyle expects a mutable `FontVariant[]`.
  */
-import type { TextStyle } from 'react-native';
 export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
 /**

@@ -1,6 +1,7 @@
 import { AnimatedNumber, useToast } from '@/components';
 import { useActiveList } from '@/lib/ListContext';
-import { uploadListItemPhoto } from '@/lib/photoUpload';
+import { UserPhoto } from '@/components/UserPhoto';
+import { storedPhotoPath, uploadListItemPhoto } from '@/lib/photoUpload';
 import { supabase } from '@/lib/supabase';
 import { colors, glow, scoreColor, sentimentColor } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -294,10 +295,6 @@ export default function ListDetail() {
   };
 
   const handlePickPhoto = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Unavailable', 'Photos are only available on iOS and Android.');
-      return;
-    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -319,12 +316,12 @@ export default function ListDetail() {
       return;
     }
 
-    // Only upload photos that are still local URIs (not already-uploaded public HTTPS URLs).
+    // Keep durable stored references; only upload newly selected local images.
     let finalPhotoUrls: string[] = [];
     try {
       finalPhotoUrls = await Promise.all(
         editPhotos.map((uri) => {
-          if (uri.startsWith('http://') || uri.startsWith('https://')) {
+          if (storedPhotoPath(uri)) {
             return Promise.resolve(uri);
           }
           return uploadListItemPhoto(uri, user.id);
@@ -336,11 +333,12 @@ export default function ListDetail() {
       return;
     }
 
-    await supabase
+    const { error: saveError } = await supabase
       .from('list_items')
       .update({ notes: editNotes, photo_urls: finalPhotoUrls, sentiment: editSentiment })
       .eq('id', editingItem.id);
     setSaving(false);
+    if (saveError) { Alert.alert('Save failed', 'Your changes were not saved. Please try again.'); return; }
     bottomSheetRef.current?.close();
     fetchItems();
   };
@@ -762,7 +760,7 @@ export default function ListDetail() {
                       onPress={() => setEditPhotos(prev => prev.filter((_, idx) => idx !== i))}
                       style={{ marginRight: 8 }}
                     >
-                      <Image source={{ uri }} style={styles.photoThumb} />
+                      <UserPhoto reference={uri} style={styles.photoThumb} label={`Attached photo ${i + 1}`} />
                       <View style={styles.removePhoto}>
                         <Ionicons name="close-circle" size={18} color="#fff" />
                       </View>

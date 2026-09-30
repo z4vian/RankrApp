@@ -1,0 +1,18 @@
+[
+  "app/(auth)/login.tsx",
+  "app/(auth)/signup.tsx",
+  "app/(auth)/forgot-password.tsx",
+  "app/(tabs)/_layout.web.tsx",
+  "app/(tabs)/index.web.tsx",
+  "app/(tabs)/lists/index.tsx",
+  "app/+html.tsx",
+  "app/reset-password.tsx",
+  "lib/theme.ts",
+  "components/BrandWordmark.tsx",
+  "components/RankedItemCard.tsx",
+  "components/ConsentCheck.web.tsx",
+  "components/Button.tsx",
+  "components/FollowButton.tsx",
+  "DESIGN.md",
+  ".impeccable/surfaces/app-auth-and-signed-in.md"
+]

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-29T20:53:55.549800+00:00",
-  "title": "Design System: Rankr Web Marketing",
+  "generatedAt": "2026-09-30T16:26:31.863708+00:00",
+  "title": "Design System: Rankr Web",
   "extensions": {
     "colorMeta": {
       "accent": {
@@ -37,6 +37,10 @@
       "body": {
         "displayName": "Marketing body",
         "purpose": "Inherited landing body; preview metadata is a separate local scale."
+      },
+      "app-body": {
+        "displayName": "Application body",
+        "purpose": "Theme body role for web application screens; the platform-native branch retains its platform font."
       }
     },
     "shadows": [
@@ -61,6 +65,11 @@
         "name": "reduced-motion",
         "value": "animation:none!important;transition:none!important;scroll-behavior:auto!important",
         "purpose": "Applied to the marketing root and descendants when prefers-reduced-motion is reduce."
+      },
+      {
+        "name": "root-reduced-motion",
+        "value": "animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important",
+        "purpose": "Web root reduced-motion rule; the landing also applies its scoped removal."
       }
     ],
     "breakpoints": [
@@ -83,6 +92,10 @@
       {
         "name": "narrow-max",
         "value": "390px"
+      },
+      {
+        "name": "app-sidebar-min",
+        "value": "1024px"
       }
     ]
   },
@@ -93,7 +106,7 @@
       "refersTo": "button-primary",
       "description": "The marketing signup link, with the implemented hover and focus color.",
       "html": "<a class=\"ds-button\" href=\"#signup\">Start your list</a>",
-      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:#7651e4;color:#fff;border:0;border-radius:8px;padding:14px 28px;font-weight:600;min-height:50px;font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-button:hover{background:#6540cd}.ds-button:focus-visible{outline-color:#bdadff!important}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}"
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:#7651e4;color:#fff;border:0;border-radius:8px;padding:14px 28px;font-weight:600;min-height:50px;font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-button:hover{background:#6540cd}.ds-button:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}"
     },
     {
       "name": "Compact action",
@@ -101,7 +114,7 @@
       "refersTo": "button-small",
       "description": "Compact header action; responsive padding follows the landing header.",
       "html": "<a class=\"ds-button ds-small\" href=\"#signup\">Start your list</a>",
-      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:#7651e4;color:#fff;border:0;border-radius:8px;padding:14px 28px;font-weight:600;min-height:50px;font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-button:hover{background:#6540cd}.ds-button:focus-visible{outline-color:#bdadff!important}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button.ds-small{padding:10px 20px;min-height:42px;font-size:12px}@media(max-width:760px){.ds-button.ds-small{padding:10px 13px;min-height:48px}}"
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:#7651e4;color:#fff;border:0;border-radius:8px;padding:14px 28px;font-weight:600;min-height:50px;font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-button:hover{background:#6540cd}.ds-button:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button.ds-small{padding:10px 20px;min-height:42px;font-size:12px}@media(max-width:760px){.ds-button.ds-small{padding:10px 13px;min-height:48px}}"
     },
     {
       "name": "Category selector",
@@ -109,7 +122,7 @@
       "refersTo": "category-selector",
       "description": "Native toggle button; selected state is shown with text and an underline.",
       "html": "<button class=\"ds-category\" aria-pressed=\"true\"><svg width=\"27\" height=\"27\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1Zm0 0v16\"/></svg>Books</button>",
-      "css": ".ds-category{display:flex;align-items:center;justify-content:center;gap:12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#b7bac9;padding:12px 8px;font-size:14px;min-height:49px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-category[aria-pressed=true]{color:#b19afa;border-color:#b19afa}.ds-category:hover{color:#fff}.ds-category:focus-visible{outline-color:#bdadff!important}"
+      "css": ".ds-category{display:flex;align-items:center;justify-content:center;gap:12px;border:0;border-bottom:2px solid transparent;background:transparent;color:#b7bac9;padding:12px 8px;font-size:14px;min-height:49px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-category[aria-pressed=true]{color:#b19afa;border-color:#b19afa}.ds-category:hover{color:#fff}.ds-category:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}"
     },
     {
       "name": "Sidebar selector",
@@ -117,7 +130,7 @@
       "refersTo": "sidebar-selector-selected",
       "description": "The compact alternative for selecting a sample media category.",
       "html": "<nav class=\"ds-sidebar\" aria-label=\"Sample collection categories\"><button aria-pressed=\"true\">Movies</button><button aria-pressed=\"false\">Books</button></nav>",
-      "css": ".ds-sidebar{width:162px;padding:22px 16px;background:#171b20;border-right:1px solid #303640}.ds-sidebar button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 9px;background:none;border:0;color:#b7bac9;font-size:11px;min-height:42px;text-align:left;border-radius:6px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-sidebar button[aria-pressed=true]{background:#30263e;color:#c1affd}.ds-sidebar button:focus-visible{outline-color:#bdadff!important}"
+      "css": ".ds-sidebar{width:162px;padding:22px 16px;background:#171b20;border-right:1px solid #303640}.ds-sidebar button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 9px;background:none;border:0;color:#b7bac9;font-size:11px;min-height:42px;text-align:left;border-radius:6px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-sidebar button[aria-pressed=true]{background:#30263e;color:#c1affd}.ds-sidebar button:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}"
     },
     {
       "name": "Ordered step card",
@@ -133,7 +146,7 @@
       "refersTo": "comparison-panel",
       "description": "Border-defined interactive demo container and its reset control; imagery is intentionally omitted from this self-contained specimen.",
       "html": "<section class=\"ds-comparison\"><div class=\"ds-heading\"><h3>Choose your favorite</h3><button>Reset</button></div><p>Your opinion is the only right answer.</p></section>",
-      "css": ".ds-comparison{padding:24px;background:#1b2026;color:#f4f4f6;border:1px solid #414752;border-radius:14px;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.ds-heading h3{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-.025em;margin:0}.ds-heading button{border:0;background:transparent;color:#b19afa;padding:10px;font-size:12px;min-height:44px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-heading button:focus-visible{outline-color:#bdadff!important}.ds-heading button:disabled{cursor:default;opacity:.5}.ds-comparison>p{font-size:12px;color:#b7bac9;text-align:center;padding-top:18px;min-height:38px;margin:0}"
+      "css": ".ds-comparison{padding:24px;background:#1b2026;color:#f4f4f6;border:1px solid #414752;border-radius:14px;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.ds-heading h3{font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-.025em;margin:0}.ds-heading button{border:0;background:transparent;color:#b19afa;padding:10px;font-size:12px;min-height:44px;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-heading button:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}.ds-heading button:disabled{cursor:default;opacity:.5}.ds-comparison>p{font-size:12px;color:#b7bac9;text-align:center;padding-top:18px;min-height:38px;margin:0}"
     },
     {
       "name": "Comparison choice label",
@@ -141,12 +154,36 @@
       "refersTo": "comparison-choice",
       "description": "Text and selected border extracted from the film-choice button; the production component also contains a 4:5 image.",
       "html": "<button class=\"ds-choice\" aria-pressed=\"true\"><span>The General</span><small>Your pick</small></button>",
-      "css": ".ds-choice{padding:0 0 10px;background:#232831;border:2px solid transparent;border-radius:8px;color:#fff;min-width:0;overflow:hidden;text-align:left;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-choice>span{font-size:13px;font-weight:600;padding:10px 10px 0;display:block}.ds-choice small{font-size:11px;color:#c6c0d7;padding:3px 10px;display:block}.ds-choice[aria-pressed=true]{border-color:#b49afb}.ds-choice[aria-pressed=true] small{color:#d2c4ff}.ds-choice:focus-visible{outline-color:#bdadff!important}"
+      "css": ".ds-choice{padding:0 0 10px;background:#232831;border:2px solid transparent;border-radius:8px;color:#fff;min-width:0;overflow:hidden;text-align:left;cursor:pointer;font-family:Rankr Inter,Arial,sans-serif;line-height:1.6;}.ds-choice>span{font-size:13px;font-weight:600;padding:10px 10px 0;display:block}.ds-choice small{font-size:11px;color:#c6c0d7;padding:3px 10px;display:block}.ds-choice[aria-pressed=true]{border-color:#b49afb}.ds-choice[aria-pressed=true] small{color:#d2c4ff}.ds-choice:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}"
+    },
+    {
+      "name": "Web authentication action",
+      "kind": "button",
+      "refersTo": "app-auth-action",
+      "description": "Login primary action with web hover and focus; native glow and shadow are omitted.",
+      "html": "<button class=\"ds-auth-action\" type=\"button\">Log in</button>",
+      "css": ".ds-auth-action{display:flex;align-items:center;justify-content:center;background:#7651e4;color:#fff;border:0;border-radius:8px;height:52px;margin-top:4px;font-family:Rankr Inter,Arial,sans-serif;font-size:16px;font-weight:700;cursor:pointer}.ds-auth-action:hover{filter:brightness(1.08)}.ds-auth-action:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}.ds-auth-action:disabled{opacity:.5}"
+    },
+    {
+      "name": "Web authentication field",
+      "kind": "input",
+      "refersTo": "app-auth-field",
+      "description": "Email field wrapper and login focus treatment; the production wrapper also includes an icon.",
+      "html": "<label class=\"ds-auth-label\" for=\"ds-auth-email\">Email</label><div class=\"ds-auth-field\"><input id=\"ds-auth-email\" type=\"email\" placeholder=\"Email address\" /></div>",
+      "css": ".ds-auth-label{color:#bbb;font-family:Rankr Inter,Arial,sans-serif;font-size:14px;font-weight:600}.ds-auth-field{display:flex;align-items:center;background:#1b2026;border:1px solid #373d48;border-radius:8px;padding:0 14px;height:52px}.ds-auth-field:focus-within{border:1.5px solid #7651e4}.ds-auth-field input{flex:1;min-width:0;background:transparent;border:0;color:#fff;font-family:Rankr Inter,Arial,sans-serif;font-size:16px;caret-color:#bdadff}.ds-auth-field input::placeholder{color:#b7bac9;opacity:1}.ds-auth-field input:focus-visible{outline:3px solid #bdadff!important;outline-offset:4px!important}"
+    },
+    {
+      "name": "Application wordmark",
+      "kind": "custom",
+      "refersTo": "app-wordmark",
+      "description": "Source-faithful shared two-bar application mark, distinct from the landing SVG.",
+      "html": "<div class=\"ds-app-wordmark\"><span class=\"ds-app-mark\" aria-hidden=\"true\"><i></i><i></i></span><span>Rankr</span></div>",
+      "css": ".ds-app-wordmark{display:flex;align-items:center;gap:10px;color:#f4f4f6;font-family:Rankr Inter,Arial,sans-serif;font-size:28px;font-weight:800;letter-spacing:-.8px}.ds-app-mark{display:flex;align-items:flex-end;gap:4px;height:28px}.ds-app-mark i{display:block;width:8px;height:18px;border-radius:2px;background:#b19afa}.ds-app-mark i:last-child{height:28px}"
     }
   ],
   "narrative": {
     "northStar": "Personal media journal",
-    "overview": "Rankr\u2019s marketing world is a personal media journal: ink charcoal, near-white text, violet actions, geometric sans typography, and real archival imagery. The dark frame lets cover art supply variety while type and restrained controls organize the page.\n\nThis document records the web marketing scope implemented in app/landing.web.tsx and lib/landing.css. The existing React Native application has a separate system in lib/theme.ts; its purple, surfaces, type ramp, shadows, and spacing are not aliases for these marketing values. Reuse the appropriate source for the surface being extended.",
+    "overview": "Rankr\u2019s marketing world is a personal media journal: ink charcoal, near-white text, violet actions, geometric sans typography, and real archival imagery. The dark frame lets cover art supply variety while type and restrained controls organize the page.\n\nThe approved world now extends from marketing into web authentication and signed-in screens. The landing composition and its tokens remain intact in app/landing.web.tsx and lib/landing.css. Application screens receive matching web colors through lib/theme.ts and Inter through app/+html.tsx, while retaining their operational type sizes and layouts. Native retains its existing palette and platform font. Frontmatter app-prefixed entries document application roles; unprefixed entries preserve the landing system.",
     "keyCharacteristics": [
       "Dark neutral framing with violet actions and pale violet selection cues.",
       "Locally hosted Inter in three supplied weights.",
@@ -156,13 +193,13 @@
     "rules": [
       {
         "name": "The Scope Rule",
-        "body": "Marketing values belong to the landing stylesheet; application values belong to the existing theme. Their similar roles do not make their values interchangeable.",
+        "body": "Marketing and the web application share the approved palette and Inter family, but retain separate layout and component sources. Use lib/theme.ts for application screens; preserve its intentional native branch.",
         "section": "colors"
       }
     ],
     "dos": [
       "Do use the marketing tokens below for extensions of the landing surface.",
-      "Do use lib/theme.ts when extending existing application screens; preserve the scope distinction.",
+      "Do use lib/theme.ts for application colors and preserve its web/native platform split.",
       "Do keep real headings, links, buttons, and list semantics in the interface.",
       "Do provide meaningful alternatives for content images and empty alternatives for decorative repeats.",
       "Do retain sample-data labeling and image provenance when reusing marketing media.",
@@ -173,7 +210,7 @@
       "Don\u2019t assume every media category has twelve examples; use the actual catalog length.",
       "Don\u2019t generalize preview microcopy sizes into body or form typography.",
       "Don\u2019t substitute uncredited artwork or infer that an image\u2019s title grants reuse rights.",
-      "Don\u2019t apply marketing color values as an undocumented replacement for the application theme."
+      "Don\u2019t apply the web palette or root font rules to native without a separate authorized change."
     ]
   }
 }

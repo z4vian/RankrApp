@@ -1,6 +1,6 @@
 ---
-name: Rankr Web Marketing
-description: A dark personal media journal with violet actions and archival cover imagery.
+name: Rankr Web
+description: A dark personal media journal spanning marketing and the web application.
 colors:
   bg: "#14181c"
   surface: "#1b2026"
@@ -25,6 +25,11 @@ colors:
   choice-selected: "#b49afb"
   choice-muted: "#c6c0d7"
   choice-selected-text: "#d2c4ff"
+  app-border-soft: "#2b313a"
+  app-border-strong: "#545966"
+  app-error-text: "#ff8585"
+  app-error-bg: "#2a1a1a"
+  app-error-border: "#3a2020"
 typography:
   display:
     fontFamily: "Rankr Inter, Arial, sans-serif"
@@ -61,18 +66,70 @@ typography:
     fontSize: "14px"
     fontWeight: 600
     lineHeight: 1.6
+  app-h1:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "32px"
+    fontWeight: 700
+    lineHeight: "38px"
+  app-h2:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "26px"
+    fontWeight: 700
+    lineHeight: "32px"
+  app-h3:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: "26px"
+  app-body:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: "22px"
+  app-body-bold:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "15px"
+    fontWeight: 600
+    lineHeight: "22px"
+  app-small:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: "18px"
+  app-caption:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "13px"
+    fontWeight: 500
+    lineHeight: "17px"
+  app-input:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "16px"
+  app-auth-action:
+    fontFamily: "Rankr Inter, Arial, sans-serif"
+    fontSize: "16px"
+    fontWeight: 700
 rounded:
   control: "8px"
   sidebar-control: "6px"
   cover: "5px"
   panel: "14px"
   preview-top: "16px 16px 0 0"
+  app-md: "10px"
+  app-xl: "20px"
+  app-pill: "999px"
 spacing:
   control-gap: "20px"
   panel-inset: "24px"
   mobile-panel-inset: "18px"
   section-column-gap: "90px"
   compact-section-column-gap: "40px"
+  app-xs: "4px"
+  app-sm: "8px"
+  app-md: "12px"
+  app-lg: "16px"
+  app-xl: "24px"
+  app-xxl: "32px"
+  app-xxxl: "48px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
@@ -111,9 +168,23 @@ components:
     textColor: "{colors.button-text}"
     rounded: "{rounded.control}"
     padding: "0 0 10px"
+  app-auth-action:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.button-text}"
+    typography: "{typography.app-auth-action}"
+    rounded: "{rounded.control}"
+    height: "52px"
+  app-auth-field:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.button-text}"
+    typography: "{typography.app-input}"
+    rounded: "{rounded.control}"
+    height: "52px"
+  app-wordmark:
+    textColor: "{colors.text}"
 ---
 
-# Design System: Rankr Web Marketing
+# Design System: Rankr Web
 
 ## Overview
 
@@ -121,7 +192,7 @@ components:
 
 Rankr’s marketing world is a personal media journal: ink charcoal, near-white text, violet actions, geometric sans typography, and real archival imagery. The dark frame lets cover art supply variety while type and restrained controls organize the page.
 
-This document records the web marketing scope implemented in app/landing.web.tsx and lib/landing.css. The existing React Native application has a separate system in lib/theme.ts; its purple, surfaces, type ramp, shadows, and spacing are not aliases for these marketing values. Reuse the appropriate source for the surface being extended.
+The approved world now extends from marketing into web authentication and signed-in screens. The landing composition and its tokens remain intact in app/landing.web.tsx and lib/landing.css. Application screens receive matching web colors through lib/theme.ts and Inter through app/+html.tsx, while retaining their operational type sizes and layouts. Native retains its existing palette and platform font. Frontmatter app-prefixed entries document application roles; unprefixed entries preserve the landing system.
 
 **Key Characteristics:**
 
@@ -142,7 +213,9 @@ Violet sits against cool charcoal, with near-white content and softer gray suppo
 
 **Background** frames the page, **surface** holds the comparison panel, and **preview background** houses the ranked collection. **Text** and **muted** establish content hierarchy; **rule** divides major sections. Container-specific borders remain local to their components.
 
-**The Scope Rule.** Marketing values belong to the landing stylesheet; application values belong to the existing theme. Their similar roles do not make their values interchangeable.
+**The Scope Rule.** Marketing and the web application share the approved palette and Inter family, but retain separate layout and component sources. Use lib/theme.ts for application screens; preserve its intentional native branch.
+
+Web theme mapping: `bg` uses background; `bgDeeper` uses preview background; `card` and `overlay` use surface; `cardElevated` uses choice background; `border` uses rule; secondary, muted, and placeholder text use muted; `purple`, `purpleLight`, `purpleSoft`, and `purpleDeep` map to accent, accent text, selection background, and button hover. The app-specific soft and strong borders are recorded separately. Semantic status and sentiment colors remain defined by lib/theme.ts and are inherited by both platforms. Native retains its darker violet-neutral palette rather than receiving these web overrides.
 
 ## Typography
 
@@ -152,6 +225,8 @@ The display is compact and extra-bold, with tighter tracking than body copy. Sec
 
 The display clamp is the base rule, overridden by explicit viewport rules: 68px from 1700px, 48px through 1100px, 42px through 760px, and 36px through 390px. Collection and ranking headlines become 36px through 760px. Do not infer a mathematical type scale from these observed sizes.
 
+Web application text inherits Inter directly from root HTML, including direct-route visits; explicit font-family declarations, such as icon fonts, are preserved. Root font-face rules map the supplied regular file to 400, semibold to the 500–700 range, and extra-bold to 800–900. These are three supplied files, not independently supplied files for every declared weight. Application theme roles in frontmatter retain their smaller operational ramp. Native uses the platform font because the web root stylesheet does not apply there.
+
 ## Layout
 
 The marketing wrapper is capped at 1200px with 72px total horizontal clearance. Clearance decreases to 48px at 1100px, 40px at 760px, and 32px at 390px. Features and ordered steps use three columns on desktop and one column through 760px. Collection and ranking sections use equal columns with the recorded section gap, compact it through 1100px, and stack through 760px.
@@ -160,11 +235,15 @@ The ranked preview is normally capped at 904px, becomes 1020px from 1700px, and 
 
 Decorative edge covers disappear through 1100px. The header’s section navigation disappears through 760px while account links remain. These are observed landing behaviors, not required layouts for every future screen.
 
+Authentication uses a 488px outer maximum with 24px padding, leaving a 440px form measure; scrollable content accommodates smaller screens. The signed-in web shell shows a 224px sidebar from 1024px and labeled bottom navigation below that threshold. The home feed caps its main column at 640px; the wide container caps at 1120px and has a 300px suggestions rail. These application measurements are independent of the marketing wrapper.
+
 ## Elevation & Depth
 
 Tonal layering and fine borders create most depth. Decorative edge covers add the sole explicit marketing box-shadow (`0 16px 24px #0003`), dimming, overlap, and rotation. Comparison and step panels stay border-defined. The application theme has its own black elevation and purple glow tokens; those are not used by this marketing stylesheet.
 
 The gallery uses a brief entrance from partial opacity and an 8px downward offset, and buttons transition their background. Reduced-motion preference removes animations, transitions, and smooth scrolling. Exact motion definitions are retained in the sidecar.
+
+Web login fields and primary actions omit the native purple glow; the login primary action also omits the native black shadow. Keep these distinctions local to the actual component rather than assuming the theme’s retained shadow and glow exports apply everywhere. Global web focus is a 3px pale-violet outline with 4px offset, and root reduced-motion rules shorten animation and transition duration to .01ms. Landing’s stricter scoped motion removal remains in place.
 
 ## Shapes
 
@@ -174,7 +253,9 @@ Controls, feature-icon tiles, and comparison choices use the control radius. Sid
 
 ### Buttons
 
-Primary links are filled violet, white, semibold, and centered with an inline arrow where shown. Normal controls have a 50px minimum height, reduced to 48px through 760px. The compact header variant has a 42px minimum height and 12px text. Hover darkens the fill. Focus uses the marketing focus color; outline geometry comes from applicable global/browser rules. Disabled buttons show half opacity and a default cursor.
+Primary links are filled violet, white, semibold, and centered with an inline arrow where shown. Normal controls have a 50px minimum height, reduced to 48px through 760px. The compact header variant has a 42px minimum height and 12px text. Hover darkens the fill. Focus uses the marketing focus color; the root stylesheet supplies a 3px outline with 4px offset. Disabled buttons show half opacity and a default cursor.
+
+Application authentication actions are 52px high with the control radius and 16px bold labels. The web role-button hover brightens to 1.08; disabled role controls use half opacity. This is distinct from the landing link’s darker hover fill.
 
 ### Category selectors
 
@@ -186,11 +267,13 @@ Step cards have a fine border, panel corners, and the recorded inset, with a cir
 
 ### Inputs / Fields
 
-The landing surface has no text-input component. Signup and other application forms are outside this marketing token scope; inspect their actual components and lib/theme.ts before extending them. Do not invent a marketing field style from the button or panel tokens.
+The landing has no input component. Web authentication fields use the application surface, control radius, a 52px wrapper, 14px horizontal inset, and a 1px theme border. In login, focus changes that border to 1.5px accent without the native glow. Entered text is white at 16px; supporting labels and messages remain separate from the field. Error feedback uses the recorded dark-red fill and border with lighter red text. Use the application components rather than inventing a landing input style.
 
 ### Navigation
 
 The wordmark pairs the Rankr name with a two-bar inline SVG mark. Desktop navigation is compact, with muted hierarchy and pale-violet link hover. Footer navigation wraps, and the bottom row stacks on small screens. The skip link becomes visible on focus. Native links and buttons remain operable by keyboard.
+
+The shared application BrandWordmark renders two pale-violet bars (8px wide, 18px and 28px high, 2px corners, 4px gap) beside a 28px extra-bold name with -0.8px tracking. Its two bars share one color; the landing SVG retains its original two-tone mark. This is an intentional implementation distinction, not a claim of identical geometry.
 
 ### Head-to-head comparison
 
@@ -203,7 +286,7 @@ Media comes from lib/marketing-media.json: real titles, local image paths, alter
 ### Do:
 
 - Do use the marketing tokens below for extensions of the landing surface.
-- Do use lib/theme.ts when extending existing application screens; preserve the scope distinction.
+- Do use lib/theme.ts for application colors and preserve its web/native platform split.
 - Do keep real headings, links, buttons, and list semantics in the interface.
 - Do provide meaningful alternatives for content images and empty alternatives for decorative repeats.
 - Do retain sample-data labeling and image provenance when reusing marketing media.
@@ -215,4 +298,4 @@ Media comes from lib/marketing-media.json: real titles, local image paths, alter
 - Don’t assume every media category has twelve examples; use the actual catalog length.
 - Don’t generalize preview microcopy sizes into body or form typography.
 - Don’t substitute uncredited artwork or infer that an image’s title grants reuse rights.
-- Don’t apply marketing color values as an undocumented replacement for the application theme.
+- Don’t apply the web palette or root font rules to native without a separate authorized change.

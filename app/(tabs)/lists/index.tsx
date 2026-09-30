@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  Alert, FlatList,
+  Alert, FlatList, Platform,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
@@ -129,6 +129,7 @@ export default function ListsScreen() {
         <View style={styles.cardCover}>
           {item.top_image ? (
             <Image
+              accessibilityLabel={`Cover artwork for ${item.title}`}
               source={{ uri: item.top_image }}
               style={styles.coverImage}
               contentFit="cover"
@@ -165,10 +166,10 @@ export default function ListsScreen() {
   );
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Lists</Text>
+          <Text accessibilityRole="header" style={styles.headerTitle}>My Lists</Text>
           <TouchableOpacity
             style={styles.newButton}
             onPress={() => router.push('/(tabs)/lists/create' as any)}
@@ -213,15 +214,15 @@ export default function ListsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: colors.bg, ...(Platform.OS === 'web' ? { width: '100%', maxWidth: 840, alignSelf: 'center' } as const : {}) },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20,
+    paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 40 : 60, paddingBottom: 20,
   },
-  headerTitle: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
+  headerTitle: { color: '#fff', fontSize: 30, fontWeight: '800', letterSpacing: -0.8 },
   newButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.purple, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+    backgroundColor: colors.purple, borderRadius: 8, minHeight: 44, paddingHorizontal: 16, paddingVertical: 10,
   },
   newButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   card: {
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
   cardCover: { height: 120, position: 'relative' },
   coverImage: { width: '100%', height: '100%' },
   coverPlaceholder: {
-    width: '100%', height: '100%', backgroundColor: '#1e1a2e',
+    width: '100%', height: '100%', backgroundColor: colors.cardElevated,
     justifyContent: 'center', alignItems: 'center',
   },
   coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
@@ -249,10 +250,10 @@ const styles = StyleSheet.create({
   },
   cardMain: { flex: 1 },
   cardTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold', marginBottom: 2 },
-  cardDesc: { color: '#888', fontSize: 13 },
+  cardDesc: { color: colors.textMuted, fontSize: 13 },
   cardMeta: { alignItems: 'center', marginLeft: 12 },
   cardCount: { color: colors.purpleLight, fontSize: 22, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
-  cardCountLabel: { color: '#666', fontSize: 11 },
+  cardCountLabel: { color: colors.textMuted, fontSize: 11 },
   deleteAction: {
     backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center',
     width: 80, borderRadius: 16, marginBottom: 16, gap: 4,
@@ -261,10 +262,10 @@ const styles = StyleSheet.create({
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyIcon: {
     width: 80, height: 80, borderRadius: 40,
-    backgroundColor: '#1e1a2e', justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+    backgroundColor: colors.cardElevated, justifyContent: 'center', alignItems: 'center', marginBottom: 16,
   },
   emptyText: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginBottom: 6 },
-  emptySubtext: { color: '#666', fontSize: 14, marginBottom: 24 },
+  emptySubtext: { color: colors.textMuted, fontSize: 14, marginBottom: 24 },
   emptyButton: {
     backgroundColor: colors.purple, borderRadius: 20,
     paddingHorizontal: 24, paddingVertical: 12,

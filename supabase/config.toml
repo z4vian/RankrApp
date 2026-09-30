@@ -1,0 +1,8 @@
+# Push is authenticated by a dedicated server secret inside its handler.
+# No user JWT can authorize recipient selection. Other functions keep JWT checks.
+[functions.send-push-notification]
+verify_jwt = false
+[functions.delete-account]
+verify_jwt = true
+[functions.secure-content]
+verify_jwt = true

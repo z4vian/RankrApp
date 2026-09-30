@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StyleProp,
   StyleSheet,
   Text,
@@ -49,7 +50,7 @@ export function Button({
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
         isDisabled && styles.disabled,
-        variant === 'primary' && shadow.md,
+        variant === 'primary' && Platform.OS !== 'web' && shadow.md,
         style,
       ]}
     >
@@ -85,7 +86,7 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     height: 52,
-    borderRadius: radius.lg,
+    borderRadius: Platform.OS === 'web' ? 8 : radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,

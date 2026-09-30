@@ -1,3 +1,4 @@
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { ConsentCheck } from '@/components/ConsentCheck';
 import { LEGAL_VERSION } from '@/lib/legal';
 import {
@@ -198,10 +199,12 @@ export default function Signup() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <View style={styles.logoArea}>
+        {Platform.OS === 'web' ? <View style={{ marginBottom: 32 }}><BrandWordmark /></View> : (
         <View style={styles.logoCircle}>
           <Text style={styles.logoText}>R</Text>
         </View>
-        <Text style={styles.appName}>Create Account</Text>
+        )}
+        <Text accessibilityRole="header" style={styles.appName}>Create your account</Text>
         <Text style={styles.tagline}>Start ranking what matters to you</Text>
       </View>
 
@@ -424,8 +427,8 @@ export default function Signup() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { flexGrow: 1, padding: 24, width: '100%', maxWidth: 500, alignSelf: 'center', justifyContent: 'center' },
-  logoArea: { alignItems: 'center', marginBottom: 40 },
+  scrollContent: { flexGrow: 1, padding: 24, width: '100%', maxWidth: 488, alignSelf: 'center', justifyContent: 'center' },
+  logoArea: { alignItems: 'center', marginBottom: 32 },
   logoCircle: {
     width: 72, height: 72, borderRadius: 20,
     backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
@@ -437,7 +440,7 @@ const styles = StyleSheet.create({
   tagline: { color: colors.textMuted, fontSize: 14 },
   form: { gap: 14 },
   field: { gap: 6 },
-  fieldLabel: { color: '#bbb', fontSize: 13, fontWeight: '600', marginLeft: 4 },
+  fieldLabel: { color: '#bbb', fontSize: 14, fontWeight: '600', marginLeft: 0 },
   fieldRequired: { color: '#ff8585' },
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -447,17 +450,17 @@ const styles = StyleSheet.create({
   errorText: { color: '#ff8585', fontSize: 14, flex: 1 },
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: 14,
+    backgroundColor: colors.card, borderRadius: Platform.OS === 'web' ? 8 : 14,
     borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
   },
   inputWrapperFocused: {
     borderColor: colors.purple,
     borderWidth: 1.5,
-    ...glow.purple,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, minWidth: 0, color: '#fff', fontSize: 15 },
+  input: { flex: 1, minWidth: 0, color: '#fff', fontSize: 16 },
   usernameStatusIcon: { marginLeft: 8 },
   fieldHint: { color: colors.textMuted, fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
   fieldError: { color: '#ff8585', fontSize: 12, marginTop: 6, paddingHorizontal: 4 },
@@ -468,11 +471,11 @@ const styles = StyleSheet.create({
   pwRuleText: { color: colors.textMuted, fontSize: 12 },
   pwRuleTextOk: { color: '#22c55e' },
   primaryButton: {
-    backgroundColor: colors.purple, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: Platform.OS === 'web' ? 8 : 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 4,
-    ...glow.purple,
-    ...shadow.sm,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
+    ...(Platform.OS !== 'web' ? shadow.sm : {}),
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
   dividerText: { color: colors.textMuted, fontSize: 13 },
   googleButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: colors.card, borderRadius: 14,
+    gap: 10, backgroundColor: colors.card, borderRadius: Platform.OS === 'web' ? 8 : 14,
     height: 52, borderWidth: 1, borderColor: colors.border,
   },
   googleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },

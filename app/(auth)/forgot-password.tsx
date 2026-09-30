@@ -1,3 +1,4 @@
+import { BrandWordmark } from '@/components/BrandWordmark';
 /**
  * app/(auth)/forgot-password.tsx
  *
@@ -24,6 +25,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -76,10 +78,13 @@ export default function ForgotPasswordScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <View style={styles.logoArea}>
+        {Platform.OS === 'web' ? <View style={{ marginBottom: 32 }}><BrandWordmark /></View> : (
         <View style={styles.logoCircle}>
           <Ionicons name="lock-closed" size={36} color="#fff" />
         </View>
+        )}
         <Text style={styles.title}>
           {sent ? 'Check your email' : 'Reset your password'}
         </Text>
@@ -134,7 +139,7 @@ export default function ForgotPasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="you@example.com"
-                placeholderTextColor="#555"
+                placeholderTextColor={colors.textPlaceholder}
                 value={email}
                 onChangeText={setEmail}
                 onFocus={() => setFocused(true)}
@@ -167,7 +172,7 @@ export default function ForgotPasswordScreen() {
 
           <TouchableOpacity
             style={styles.switchRow}
-            onPress={() => router.back()}
+            onPress={() => router.replace('/(auth)/login' as any)}
             hitSlop={12}
           >
             <Ionicons name="chevron-back" size={16} color={colors.purpleLight} />
@@ -175,12 +180,14 @@ export default function ForgotPasswordScreen() {
           </TouchableOpacity>
         </View>
       )}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24, width: '100%', maxWidth: 488, alignSelf: 'center' },
 
   logoArea: { alignItems: 'center', marginBottom: 32 },
   logoCircle: {
@@ -191,13 +198,13 @@ const styles = StyleSheet.create({
   },
   title: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
   subtitle: {
-    color: '#888', fontSize: 14, textAlign: 'center', lineHeight: 20,
+    color: colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20,
     paddingHorizontal: 24,
   },
 
   form: { gap: 14 },
   field: { gap: 6 },
-  fieldLabel: { color: '#bbb', fontSize: 13, fontWeight: '600', marginLeft: 4 },
+  fieldLabel: { color: '#bbb', fontSize: 14, fontWeight: '600', marginLeft: 0 },
 
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -208,24 +215,24 @@ const styles = StyleSheet.create({
 
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: 14,
+    backgroundColor: colors.card, borderRadius: Platform.OS === 'web' ? 8 : 14,
     borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
   },
   inputWrapperFocused: {
     borderColor: colors.purple,
     borderWidth: 1.5,
-    ...glow.purple,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, color: '#fff', fontSize: 15 },
+  input: { flex: 1, color: '#fff', fontSize: 16 },
 
   primaryButton: {
-    backgroundColor: colors.purple, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: Platform.OS === 'web' ? 8 : 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 4,
-    ...glow.purple,
-    ...shadow.sm,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
+    ...(Platform.OS !== 'web' ? shadow.sm : {}),
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 

@@ -1,0 +1,321 @@
+{
+  "pages": [
+    {
+      "name": "login-desktop",
+      "url": "http://127.0.0.1:4180/login",
+      "text": "Rankr\nWelcome back\nRank everything you love\nEmail\n\nPassword\n\n\nLog In\nForgot password?\nor\n\nContinue with Google\nDon't have an account? \nSign up\nRead our \nTerms\n and \nPrivacy\n.",
+      "overflow": false,
+      "font": "\"Rankr Inter\", Arial, sans-serif",
+      "violations": []
+    },
+    {
+      "name": "signup-desktop",
+      "url": "http://127.0.0.1:4180/signup",
+      "text": "Rankr\nCreate your account\nStart ranking what matters to you\nUsername *\n\n3-20 lowercase letters, numbers, underscores\nEmail *\n\nPassword *\n\n\nUse at least 8 characters, including a letter and a number.\nConfirm Password *\n\nI am at least 13, agree to the Terms & Conditions, and acknowledge the Priva",
+      "overflow": false,
+      "font": "\"Rankr Inter\", Arial, sans-serif",
+      "violations": []
+    },
+    {
+      "name": "forgot-password-desktop",
+      "url": "http://127.0.0.1:4180/forgot-password",
+      "text": "Rankr\nReset your password\nEnter your email and we'll send you a link to reset your password.\nEmail\n\nSend reset link\n\nBack to login",
+      "overflow": false,
+      "font": "\"Rankr Inter\", Arial, sans-serif",
+      "violations": []
+    },
+    {
+      "name": "login-mobile",
+      "url": "http://127.0.0.1:4180/login",
+      "text": "Rankr\nWelcome back\nRank everything you love\nEmail\n\nPassword\n\n\nLog In\nForgot password?\nor\n\nContinue with Google\nDon't have an account? \nSign up\nRead our \nTerms\n and \nPrivacy\n.",
+      "overflow": false,
+      "font": "\"Rankr Inter\", Arial, sans-serif",
+      "violations": []
+    },
+    {
+      "name": "signup-mobile",
+      "url": "http://127.0.0.1:4180/signup",
+      "text": "Rankr\nCreate your account\nStart ranking what matters to you\nUsername *\n\n3-20 lowercase letters, numbers, underscores\nEmail *\n\nPassword *\n\n\nUse at least 8 characters, including a letter and a number.\nConfirm Password *\n\nI am at least 13, agree to the Terms & Conditions, and acknowledge the Priva",
+      "overflow": false,
+      "font": "\"Rankr Inter\", Arial, sans-serif",
+      "violations": []
+    },
+    {
+      "name": "forgot-password-mobile",
+      "url": "http://127.0.0.1:4180/forgot-password",
+      "text": "Rankr\nReset your password\nEnter your email and we'll send you a link to reset your password.\nEmail\n\nSend reset link\n\nBack to login",
+      "overflow": false,
+      "font": "\"Rankr Inter\", Arial, sans-serif",
+      "violations": []
+    },
+    {
+      "name": "feed-desktop",
+      "url": "http://127.0.0.1:4180/",
+      "text": "Rankr\n\nHome\n\nLists\n\nSearch\n\nFor You\n\nProfile\n\nCmd/Ctrl+K to search\nYour feed\nWelcome back, @alex\n\n\nJ\nJules Chen\n@jules\njust now\nRewatched The General this weekend. The practical stunts still feel impossible.\nA\nAlex Morgan\n@alex\n· ranked\n·\njust now\nThe General\nin Silent film favorites\n9.2\nSti",
+      "overflow": false,
+      "font": null,
+      "violations": []
+    },
+    {
+      "name": "lists-desktop",
+      "url": "http://127.0.0.1:4180/lists/",
+      "text": "Rankr\n\nHome\n\nLists\n\nSearch\n\nFor You\n\nProfile\n\nCmd/Ctrl+K to search\nMy Lists\n\nNew\n\nDelete\n\nMovies\nSilent film favorites\nThe films I keep coming back to.\n2\nitems",
+      "overflow": false,
+      "font": null,
+      "violations": []
+    },
+    {
+      "name": "feed-mobile",
+      "url": "http://127.0.0.1:4180/",
+      "text": "Your feed\nWelcome back, @alex\n\n\nJ\nJules Chen\n@jules\njust now\nRewatched The General this weekend. The practical stunts still feel impossible.\nA\nAlex Morgan\n@alex\n· ranked\n·\njust now\nThe General\nin Silent film favorites\n9.2\nStill one of my favorite final scenes.\nA\nAlex Morgan\n@alex\n· ranked\n·\n1h\nThe",
+      "overflow": false,
+      "font": null,
+      "violations": []
+    },
+    {
+      "name": "lists-mobile",
+      "url": "http://127.0.0.1:4180/lists/",
+      "text": "My Lists\n\nNew\n\nDelete\n\nMovies\nSilent film favorites\nThe films I keep coming back to.\n2\nitems\n\n\nHome\n\n\nLists\n\n\nSearch\n\n\nFor You\n\n\nProfile",
+      "overflow": false,
+      "font": null,
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/auth/v1/token"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/follows"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/posts"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/follows"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/list_items"
+    },
+    {
+      "method": "HEAD",
+      "path": "/rest/v1/likes"
+    },
+    {
+      "method": "HEAD",
+      "path": "/rest/v1/comments"
+    },
+    {
+      "method": "HEAD",
+      "path": "/rest/v1/watched_with"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/lists"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/list_items"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/posts"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/follows"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/list_items"
+    },
+    {
+      "method": "HEAD",
+      "path": "/rest/v1/likes"
+    },
+    {
+      "method": "HEAD",
+      "path": "/rest/v1/comments"
+    },
+    {
+      "method": "HEAD",
+      "path": "/rest/v1/watched_with"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/lists"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/list_items"
+    }
+  ],
+  "loginError": "\nInvalid login credentials",
+  "passwordVisible": null
+}

@@ -30,7 +30,7 @@ import {
   type FollowUser,
 } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
-import { colors, glow, radius, spacing, typography } from '@/lib/theme';
+import { colors, radius, spacing, typography } from '@/lib/theme';
 import {
   Avatar,
   EmptyState,
@@ -377,8 +377,8 @@ export default function HomeScreen() {
   const renderHeader = () => (
     <View style={styles.greeting}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.greetingHello}>Hello,</Text>
-        <Text style={styles.greetingName} numberOfLines={1}>@{username} 👋</Text>
+        <Text accessibilityRole="header" style={styles.greetingName}>Your feed</Text>
+        <Text style={styles.greetingHello} numberOfLines={1}>{username ? `Welcome back, @${username}` : "What’s new in your circle"}</Text>
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity
@@ -399,6 +399,8 @@ export default function HomeScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.composeButton}
+          accessibilityRole="button"
+          accessibilityLabel="Write a post"
           onPress={() => router.push('/post/compose' as any)}
         >
           <Ionicons name="create-outline" size={22} color="#fff" />
@@ -495,7 +497,7 @@ export default function HomeScreen() {
         loadingMore ? (
           <ActivityIndicator color={colors.purpleLight} style={styles.footerSpinner} />
         ) : feed.length > 0 && endReached ? (
-          <Text style={styles.endLabel}>You're all caught up</Text>
+          <Text style={styles.endLabel}>You’re all caught up</Text>
         ) : null
       }
       refreshControl={
@@ -580,7 +582,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     width: '100%' as any,
-    maxWidth: 1200,
+    maxWidth: 1120,
     alignSelf: 'center' as any,
     paddingHorizontal: spacing.lg,
   },
@@ -589,7 +591,7 @@ const styles = StyleSheet.create({
     maxWidth: 640,
   },
   railCol: {
-    width: 320,
+    width: 300,
     marginLeft: spacing.xl,
     paddingTop: 40, // align with feed greeting block paddingTop
   },
@@ -608,13 +610,13 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   greetingHello: { color: colors.textMuted, fontSize: 16 },
-  greetingName: { color: colors.text, fontSize: 26, fontWeight: 'bold' },
+  greetingName: { color: colors.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.8, marginBottom: 6 },
 
   headerActions: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
   },
   bellButton: {
-    width: 38, height: 38, borderRadius: 19,
+    width: 44, height: 44, borderRadius: 8,
     backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: colors.border,
     position: 'relative',
@@ -631,9 +633,9 @@ const styles = StyleSheet.create({
     color: '#fff', fontSize: 9, fontWeight: '700',
   },
   composeButton: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 44, height: 44, borderRadius: 8,
     backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
-    ...glow.purpleStrong,
+
   },
 
   emptyWrap: { paddingTop: 40 },

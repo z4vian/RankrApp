@@ -18,7 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, Image, Platform, ScrollView,
+  ActivityIndicator, Alert, FlatList, Image, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 
@@ -161,10 +161,6 @@ export default function TVSearch() {
   };
 
   const handlePickPhoto = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Unavailable', 'Photos are only available on iOS and Android.');
-      return;
-    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,

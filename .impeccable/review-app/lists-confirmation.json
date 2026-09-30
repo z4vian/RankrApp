@@ -1,0 +1,95 @@
+{
+  "pages": [
+    {
+      "name": "lists-desktop",
+      "url": "http://127.0.0.1:4177/lists/",
+      "text": "Rankr\n\nHome\n\nLists\n\nSearch\n\nFor You\n\nProfile\n\nCmd/Ctrl+K to search\nMy Lists\n\nNew\n\nDelete\n\nMovies\nSilent film favorites\nThe films I keep coming back to.\n2\nitems",
+      "overflow": false,
+      "font": null,
+      "violations": []
+    },
+    {
+      "name": "lists-mobile",
+      "url": "http://127.0.0.1:4177/lists/",
+      "text": "My Lists\n\nNew\n\nDelete\n\nMovies\nSilent film favorites\nThe films I keep coming back to.\n2\nitems\n\n\nHome\n\n\nLists\n\n\nSearch\n\n\nFor You\n\n\nProfile",
+      "overflow": false,
+      "font": null,
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/lists"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/list_items"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/v1/user"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/lists"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/rest/v1/list_items"
+    }
+  ]
+}

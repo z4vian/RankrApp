@@ -1,3 +1,4 @@
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { supabase } from '@/lib/supabase';
 import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -54,10 +55,12 @@ export default function Login() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       {/* Logo area */}
       <View style={styles.logoArea}>
+        {Platform.OS === 'web' ? <View style={{ marginBottom: 32 }}><BrandWordmark /></View> : (
         <View style={styles.logoCircle}>
           <Text style={styles.logoText}>R</Text>
         </View>
-        <Text style={styles.appName}>Rankr</Text>
+        )}
+        <Text accessibilityRole="header" style={styles.appName}>Welcome back</Text>
         <Text style={styles.tagline}>Rank everything you love</Text>
       </View>
 
@@ -131,6 +134,7 @@ export default function Login() {
 
         <TouchableOpacity
           style={styles.primaryButton}
+          accessibilityRole="button"
           onPress={handleLogin}
           disabled={loading}
         >
@@ -157,13 +161,14 @@ export default function Login() {
           <View style={styles.divider} />
         </View>
 
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+        <TouchableOpacity accessibilityRole="button" disabled={loading} style={styles.googleButton} onPress={handleGoogleLogin}>
           <Ionicons name="logo-google" size={18} color="#fff" />
           <Text style={styles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.switchRow}
+          accessibilityRole="link"
           onPress={() => router.push('/(auth)/signup' as any)}
         >
           <Text style={styles.switchText}>Don&apos;t have an account? </Text>
@@ -201,9 +206,9 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { flexGrow: 1, padding: 24, width: '100%', maxWidth: 500, alignSelf: 'center', justifyContent: 'center' },
+  scrollContent: { flexGrow: 1, padding: 24, width: '100%', maxWidth: 488, alignSelf: 'center', justifyContent: 'center' },
 
-  logoArea: { alignItems: 'center', marginBottom: 48 },
+  logoArea: { alignItems: 'center', marginBottom: 32 },
   logoCircle: {
     width: 80, height: 80, borderRadius: 24,
     backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
@@ -212,11 +217,11 @@ const styles = StyleSheet.create({
   },
   logoText: { color: '#fff', fontSize: 40, fontWeight: 'bold' },
   appName: { color: '#fff', fontSize: 32, fontWeight: 'bold', marginBottom: 6 },
-  tagline: { color: colors.textMuted, fontSize: 15 },
+  tagline: { color: colors.textMuted, fontSize: 16 },
 
   form: { gap: 14 },
   field: { gap: 6 },
-  fieldLabel: { color: '#bbb', fontSize: 13, fontWeight: '600', marginLeft: 4 },
+  fieldLabel: { color: '#bbb', fontSize: 14, fontWeight: '600', marginLeft: 0 },
 
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -227,24 +232,24 @@ const styles = StyleSheet.create({
 
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: 14,
+    backgroundColor: colors.card, borderRadius: Platform.OS === 'web' ? 8 : 14,
     borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
   },
   inputWrapperFocused: {
     borderColor: colors.purple,
     borderWidth: 1.5,
-    ...glow.purple,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, color: '#fff', fontSize: 15 },
+  input: { flex: 1, color: '#fff', fontSize: 16 },
 
   primaryButton: {
-    backgroundColor: colors.purple, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: Platform.OS === 'web' ? 8 : 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 4,
-    ...glow.purple,
-    ...shadow.sm,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
+    ...(Platform.OS !== 'web' ? shadow.sm : {}),
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   forgotRow: { alignItems: 'center', paddingVertical: 4 },
@@ -256,7 +261,7 @@ const styles = StyleSheet.create({
 
   googleButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: colors.card, borderRadius: 14,
+    gap: 10, backgroundColor: colors.card, borderRadius: Platform.OS === 'web' ? 8 : 14,
     height: 52, borderWidth: 1, borderColor: colors.border,
   },
   googleButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },

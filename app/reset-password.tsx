@@ -335,7 +335,7 @@ function RuleRow({ ok, label }: { ok: boolean; label: string }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24, width: '100%', maxWidth: 488, alignSelf: 'center' },
 
   logoArea: { alignItems: 'center', marginBottom: 32 },
   logoCircle: {
@@ -346,13 +346,13 @@ const styles = StyleSheet.create({
   },
   title: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
   subtitle: {
-    color: '#888', fontSize: 14, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24,
+    color: colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24,
   },
 
   loadingBlock: {
     alignItems: 'center', gap: 12, paddingVertical: 24,
   },
-  loadingText: { color: '#888', fontSize: 14 },
+  loadingText: { color: colors.textMuted, fontSize: 14 },
 
   form: { gap: 14 },
   field: { gap: 6 },
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
 
   inputWrapper: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: 14,
+    backgroundColor: colors.card, borderRadius: Platform.OS === 'web' ? 8 : 14,
     borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, height: 52,
   },
@@ -382,15 +382,15 @@ const styles = StyleSheet.create({
   ruleRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  ruleText: { color: '#888', fontSize: 12 },
+  ruleText: { color: colors.textMuted, fontSize: 12 },
   ruleTextOk: { color: colors.success },
 
   primaryButton: {
-    backgroundColor: colors.purple, borderRadius: 14,
+    backgroundColor: colors.purple, borderRadius: Platform.OS === 'web' ? 8 : 14,
     height: 52, justifyContent: 'center', alignItems: 'center',
     marginTop: 4,
-    ...glow.purple,
-    ...shadow.sm,
+    ...(Platform.OS !== 'web' ? glow.purple : {}),
+    ...(Platform.OS !== 'web' ? shadow.sm : {}),
   },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
