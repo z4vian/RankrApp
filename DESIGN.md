@@ -190,7 +190,7 @@ components:
 
 **Creative North Star: "Personal media journal"**
 
-Rankr’s marketing world is a personal media journal: ink charcoal, near-white text, violet actions, geometric sans typography, and real archival imagery. The dark frame lets cover art supply variety while type and restrained controls organize the page.
+Rankr’s marketing world is a personal media journal: ink charcoal, near-white text, violet actions, geometric sans typography, and real openly licensed and archival imagery. The dark frame lets cover art supply variety while type and restrained controls organize the page.
 
 The approved world now extends from marketing into web authentication and signed-in screens. The landing composition and its tokens remain intact in app/landing.web.tsx and lib/landing.css. Application screens receive matching web colors through lib/theme.ts and Inter through app/+html.tsx, while retaining their operational type sizes and layouts. Native retains its existing palette and platform font. Frontmatter app-prefixed entries document application roles; unprefixed entries preserve the landing system.
 
@@ -279,7 +279,7 @@ The shared application BrandWordmark renders two pale-violet bars (8px wide, 18p
 
 Two real film choices sit side by side. A selected choice has a pale-violet border and a visible “Your pick” label, so state is not communicated only by color. Choosing a film selects the Movies category and updates the sample order; reset clears the choice. The status text is announced through a live status role. This is an in-page demonstration, with no persistence or network submission in its handler.
 
-Media comes from lib/marketing-media.json: real titles, local image paths, alternatives, creators, sources, licenses, and modifications. The current set records public-domain imagery plus one CC BY-SA 3.0 game screenshot, with credits exposed at /image-credits. This document records those provenance fields, not an independent legal review.
+Media comes from lib/marketing-media.json: real titles, local image paths, alternatives, creators, sources, licenses, and modifications. The current set records public-domain classics, six CC BY 3.0/4.0 open-film posters, and two CC BY-SA 3.0 game screenshots, with credits exposed at /image-credits. This document records those provenance fields, not an independent legal review.
 
 ## Do's and Don'ts
 

@@ -1,6 +1,72 @@
 [
   {
     "category": "Movies",
+    "title": "Charge",
+    "image": "/media/charge.jpg",
+    "alt": "Charge official open-film poster",
+    "creator": "Blender Studio",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Charge-movie_poster.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
+  },
+  {
+    "category": "Movies",
+    "title": "Sprite Fright",
+    "image": "/media/sprite-fright.jpg",
+    "alt": "Sprite Fright official open-film poster",
+    "creator": "Blender Studio",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sprite_Fright-movie_poster.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
+  },
+  {
+    "category": "Movies",
+    "title": "Spring",
+    "image": "/media/spring.jpg",
+    "alt": "Spring official open-film poster",
+    "creator": "Francesco Siddi",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Spring2019PillarPosterBlender.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
+  },
+  {
+    "category": "Movies",
+    "title": "Sintel",
+    "image": "/media/sintel.jpg",
+    "alt": "Sintel official open-film poster",
+    "creator": "(c) copyright Blender Foundation | durian.blender.org",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sintel_poster.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
+  },
+  {
+    "category": "Movies",
+    "title": "Tears of Steel",
+    "image": "/media/tears-of-steel.jpg",
+    "alt": "Tears of Steel official open-film poster",
+    "creator": "(CC) Blender Foundation | Project Mango",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tos-poster.png",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
+  },
+  {
+    "category": "Movies",
+    "title": "Big Buck Bunny",
+    "image": "/media/big-buck-bunny.jpg",
+    "alt": "Big Buck Bunny official open-film poster",
+    "creator": "(c) copyright Blender Foundation | peach.blender.org",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_buck_bunny_poster_big.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
+  },
+  {
+    "category": "Movies",
     "title": "The Cabinet of Dr. Caligari",
     "image": "/media/the-cabinet-of-dr-caligari.jpg",
     "alt": "Original artwork for The Cabinet of Dr. Caligari",
@@ -66,72 +132,6 @@
     "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
   },
   {
-    "category": "Movies",
-    "title": "Sherlock Jr.",
-    "image": "/media/sherlock-jr.jpg",
-    "alt": "Original artwork for Sherlock Jr.",
-    "creator": "Unknown authorUnknown author",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File:Sherlock_jr_poster.jpg",
-    "licenseUrl": "",
-    "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
-  },
-  {
-    "category": "Movies",
-    "title": "The Gold Rush",
-    "image": "/media/the-gold-rush.jpg",
-    "alt": "Original artwork for The Gold Rush",
-    "creator": "Charles Chaplin Productions / United Artists",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File:Gold_rush_poster.jpg",
-    "licenseUrl": "",
-    "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
-  },
-  {
-    "category": "Movies",
-    "title": "The Phantom of the Opera",
-    "image": "/media/the-phantom-of-the-opera.jpg",
-    "alt": "Original artwork for The Phantom of the Opera",
-    "creator": "Universal Pictures",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File:Phantom_of_the_opera_1925_poster.jpg",
-    "licenseUrl": "",
-    "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
-  },
-  {
-    "category": "Movies",
-    "title": "The Lost World",
-    "image": "/media/the-lost-world.jpg",
-    "alt": "Original artwork for The Lost World",
-    "creator": "First National Pictures",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File:The_Lost_World_(1925)_-_film_poster.jpg",
-    "licenseUrl": "",
-    "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
-  },
-  {
-    "category": "Movies",
-    "title": "Dr. Jekyll and Mr. Hyde",
-    "image": "/media/dr-jekyll-and-mr-hyde.jpg",
-    "alt": "Original artwork for Dr. Jekyll and Mr. Hyde",
-    "creator": "Unknown authorUnknown author (illustration)",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File:Dr_Jekyll_and_Mr_Hyde_1920_poster.jpg",
-    "licenseUrl": "",
-    "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
-  },
-  {
-    "category": "Movies",
-    "title": "The Thief of Bagdad",
-    "image": "/media/the-thief-of-bagdad.jpg",
-    "alt": "Original artwork for The Thief of Bagdad",
-    "creator": "Anton Grot",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File:The_Thief_of_Bagdad_(1924)_-_film_poster.jpg",
-    "licenseUrl": "",
-    "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
-  },
-  {
     "category": "TV shows",
     "title": "Bonanza",
     "image": "/media/bonanza.jpg",
@@ -185,5 +185,16 @@
     "source": "https://commons.wikimedia.org/wiki/File:The_Time_Machine_(Heinemann_text)_-_front_cover.jpg",
     "licenseUrl": "",
     "changes": "Resized and JPEG encoded; cropped to fit in the page layout."
+  },
+  {
+    "category": "Games",
+    "title": "SuperTuxKart",
+    "image": "/media/supertuxkart.jpg",
+    "alt": "SuperTuxKart gameplay screenshot",
+    "creator": "SuperTuxKart development team",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:SuperTuxKart_0.8_screenshot.jpg",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "changes": "Resized and JPEG encoded; cropped to fit the page layout. Original branding belongs to its respective owners; no endorsement is implied."
   }
 ]
