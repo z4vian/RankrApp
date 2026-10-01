@@ -1,4 +1,5 @@
 import { BrandWordmark } from '@/components/BrandWordmark';
+import { getGuestDraft } from '@/lib/guestDraft';
 import { supabase } from '@/lib/supabase';
 import { colors, glow, shadow } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -30,7 +31,7 @@ export default function Login() {
     try {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setError(error.message);
-    else router.replace('/(tabs)' as any);
+    else router.replace(getGuestDraft()?.items.length ? '/save-list' : '/(tabs)' as any);
     } catch { setError('Could not sign in. Check your connection and try again.'); }
     finally { setLoading(false); }
   };
@@ -66,6 +67,7 @@ export default function Login() {
 
       {/* Form */}
       <View style={styles.form}>
+        <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/try' as any)} style={{ paddingVertical: 12 }}><Text style={{ color: colors.purpleLight }}>Explore Rankr without an account</Text></TouchableOpacity>
         {error ? (
           <View accessibilityRole="alert" style={styles.errorBox}>
             <Ionicons name="alert-circle-outline" size={16} color="#ff8585" />

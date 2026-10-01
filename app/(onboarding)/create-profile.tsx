@@ -18,6 +18,7 @@
  * profile shell exists but username is null/empty.
  */
 
+import { getGuestDraft } from '@/lib/guestDraft';
 import { useToast } from '@/components';
 import { isUsernameAvailable, validateUsername } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
@@ -235,7 +236,9 @@ export default function CreateProfileScreen() {
       }
       return;
     }
-    router.push('/(onboarding)/first-rank' as any);
+    const pref = await supabase.auth.updateUser({ data: { rankr_walkthrough_required: true } });
+    if (pref.error) { showToast('Could not continue. Please try again.', { tone: 'error' }); return; }
+    router.replace(getGuestDraft()?.items.length ? '/save-list' : '/walkthrough?variant=full' as any);
   };
 
   if (loading) {

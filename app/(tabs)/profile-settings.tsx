@@ -428,7 +428,7 @@ export default function ProfileSettings() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.accountTitle}>Blocked users</Text>
-              <Text style={styles.accountSub}>Manage who's hidden from your feed</Text>
+              <Text style={styles.accountSub}>Manage who’s hidden from your feed</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#444" />
           </TouchableOpacity>
@@ -440,6 +440,23 @@ export default function ProfileSettings() {
         {/* ---- About section — feedback, legal, version ---- */}
         <View style={styles.accountSection}>
           <Text style={styles.accountHeader}>ABOUT</Text>
+
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => router.push('/walkthrough?replay=1&variant=full' as any)}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel="Replay the Rankr introduction"
+          >
+            <View style={[styles.accountIcon, { backgroundColor: colors.cardElevated }]}>
+              <Ionicons name="compass-outline" size={18} color={colors.purpleLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountTitle}>Replay introduction</Text>
+              <Text style={styles.accountSub}>A quick guide to lists, sharing, and discovery</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.accountRow}

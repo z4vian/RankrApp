@@ -23,14 +23,16 @@ import { ErrorBoundary } from '@/app/_components/ErrorBoundary';
 import { ToastProvider } from '@/components';
 import { LEGAL_VERSION } from '@/lib/legal';
 import { ListProvider } from '@/lib/ListContext';
-import { isOnboardingComplete } from '@/lib/onboarding';
+import { getOnboardingState, type OnboardingState } from '@/lib/onboarding';
+import { getGuestDraft } from '@/lib/guestDraft';
 import { registerPushToken } from '@/lib/pushTokens';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import Head from 'expo-router/head';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from '@/lib/theme';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 /**
@@ -69,11 +71,12 @@ async function setupPush(): Promise<void> {
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  // Phase 7: tri-state onboarding flag.
-  //   null    — not yet resolved for the current session
-  //   true    — user has completed onboarding (or is a back-compat pre-Phase-7 user)
-  //   false   — needs to be routed to /(onboarding)/create-profile
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  // Resolve minimal profile setup separately from the optional walkthrough.
+  const [onboardingState, setOnboardingState] = useState<OnboardingState | null>(null);
+  const [profileError, setProfileError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const offeredDraft = useRef<string | null>(null);
+  const previousUser = useRef<string | null>(null);
   const router = useRouter();
   const segments = useSegments() as string[];
 
@@ -84,37 +87,35 @@ export default function RootLayout() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (previousUser.current !== (session?.user.id ?? null)) { offeredDraft.current = null; previousUser.current = session?.user.id ?? null; }
+      setProfileError(false);
       // Reset the onboarding flag on auth changes so we re-check for the new
       // user. The next effect re-resolves it.
-      setOnboardingDone(null);
+      setOnboardingState(null);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  // Resolve onboarding status whenever a session appears. Runs once per
-  // session — onboardingDone moves null → boolean and stays there until the
-  // next sign-in/out.
+  // Resolve the account's setup state after sign-in and metadata changes.
   useEffect(() => {
     if (!session) {
-      setOnboardingDone(null);
+      setOnboardingState(null);
       return;
     }
-    if (onboardingDone !== null) return;
+    if (onboardingState !== null) return;
     let cancelled = false;
-    isOnboardingComplete()
+    getOnboardingState()
       .then((done) => {
-        if (!cancelled) setOnboardingDone(done);
+        if (!cancelled) setOnboardingState(done);
       })
       .catch(() => {
-        // Defensive: treat as done to avoid trapping the user. The
-        // back-compat path inside lib/onboarding already treats non-null
-        // usernames as onboarded.
-        if (!cancelled) setOnboardingDone(true);
+        // Show a retry instead of guessing about a failed profile request.
+        if (!cancelled) setProfileError(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [session, onboardingDone]);
+  }, [session, onboardingState, retry]);
 
   useEffect(() => {
     if (loading) return;
@@ -131,40 +132,32 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === '(auth)';
     const inLandingGroup = segments[0] === 'landing';
     const inOnboardingGroup = segments[0] === '(onboarding)';
-
-    if (!session && !inAuthGroup && !inLandingGroup) {
-      // Web users see a public Letterboxd-style landing page before being
-      // pushed into auth. Native users go straight to login as before — no
-      // landing flash on app open.
-      if (Platform.OS === 'web') {
-        router.replace('/landing' as any);
-      } else {
-        router.replace('/(auth)/login' as any);
-      }
+    const inTry = segments[0] === 'try';
+    if (!session) {
+      if (!inAuthGroup && !inLandingGroup && !inTry) router.replace(Platform.OS === 'web' ? '/landing' : '/try' as any);
       return;
     }
-
-    if (session && (inAuthGroup || inLandingGroup)) {
-      // Signed-in users should never see the unauth surfaces. Covers the case
-      // where a web user manually navigates to /landing after logging in.
-      router.replace('/(tabs)' as any);
+    if (onboardingState === null) return;
+    if (onboardingState === 'profile') {
+      if (!inOnboardingGroup) router.replace('/(onboarding)/create-profile' as any);
       return;
     }
-
-    // Phase 7 — onboarding gate. Only applies once the session is present
-    // AND we've resolved the onboarding flag. While resolving (null) we let
-    // the user stay wherever they are to avoid a flash.
-    if (session && onboardingDone === false && !inOnboardingGroup) {
-      router.replace('/(onboarding)/create-profile' as any);
+    // Walkthroughs are optional and may always be replayed after profile setup.
+    if (segments[0] === 'walkthrough' || inTry) return;
+    const draft = getGuestDraft();
+    if (segments[0] === 'save-list') { offeredDraft.current = draft?.id ?? null; return; }
+    const entry = inAuthGroup || inLandingGroup || inTry || (segments[0] === '(tabs)' && segments.length === 1);
+    if (draft?.items.length && entry && offeredDraft.current !== draft.id) {
+      offeredDraft.current = draft.id;
+      router.replace('/save-list' as any);
       return;
     }
-
-    // Don't let a finished user re-enter onboarding by URL.
-    if (session && onboardingDone === true && inOnboardingGroup) {
-      router.replace('/(tabs)' as any);
+    if (onboardingState === 'full' || onboardingState === 'short') {
+      router.replace(`/walkthrough?variant=${onboardingState}` as any);
       return;
     }
-  }, [session, loading, onboardingDone, segments]);
+    if (inAuthGroup || inLandingGroup || inOnboardingGroup) router.replace('/(tabs)' as any);
+  }, [session, loading, onboardingState, segments, router]);
 
   // Phase 5 — set up push when the session becomes available.
   useEffect(() => {
@@ -173,9 +166,17 @@ export default function RootLayout() {
     }
   }, [session]);
 
+  if (session && profileError && !['privacy', 'terms', 'cookies', 'feedback', 'reset-password'].includes(segments[0])) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 28, gap: 20 }}>
+      <Text accessibilityRole="alert" style={{ color: colors.text, fontSize: 18 }}>Your profile could not be loaded. Your starter list is still on this device.</Text>
+      <TouchableOpacity accessibilityRole="button" onPress={() => { setProfileError(false); setOnboardingState(null); setRetry(n => n + 1); }} style={{ padding: 16, backgroundColor: colors.purple, borderRadius: 8 }}><Text style={{ color: '#fff' }}>Try again</Text></TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" onPress={() => { void supabase.auth.signOut(); }} style={{ padding: 16 }}><Text style={{ color: colors.purpleLight }}>Sign out</Text></TouchableOpacity>
+    </View>;
+  }
+  if (loading) return <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel="Loading Rankr" color={colors.purpleLight} /></View>;
   return (
     <ErrorBoundary>
-      <Head><title>{({ privacy: 'Privacy Policy', terms: 'Terms & Conditions', cookies: 'Cookie & Storage Policy', 'image-credits': 'Image Credits', feedback: 'Send Feedback', signup: 'Create Account', login: 'Log In', 'reset-password': 'Reset Password', consent: 'Your Agreement' } as Record<string, string>)[segments[segments.length - 1]] ?? 'Your Favorites'} · Rankr</title></Head>
+      <Head><title>{({ privacy: 'Privacy Policy', terms: 'Terms & Conditions', cookies: 'Cookie & Storage Policy', 'image-credits': 'Image Credits', feedback: 'Send Feedback', signup: 'Create Account', login: 'Log In', 'reset-password': 'Reset Password', consent: 'Your Agreement', try: 'Build Your First List', 'save-list': 'Save Your List', walkthrough: 'Explore Rankr' } as Record<string, string>)[segments[segments.length - 1]] ?? 'Your Favorites'} · Rankr</title></Head>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ListProvider>
           <ToastProvider>
@@ -192,6 +193,9 @@ export default function RootLayout() {
               <Stack.Screen name="year-in-review" />
               <Stack.Screen name="profile-delete" />
               <Stack.Screen name="landing" />
+              <Stack.Screen name="try" />
+              <Stack.Screen name="save-list" />
+              <Stack.Screen name="walkthrough" />
               <Stack.Screen name="discover" />
               <Stack.Screen name="reset-password" />
               <Stack.Screen name="privacy" />

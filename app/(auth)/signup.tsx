@@ -1,5 +1,6 @@
 import { BrandWordmark } from '@/components/BrandWordmark';
 import { ConsentCheck } from '@/components/ConsentCheck';
+import { getGuestDraft } from '@/lib/guestDraft';
 import { LEGAL_VERSION } from '@/lib/legal';
 import {
   createProfile,
@@ -32,6 +33,8 @@ type FocusedField = 'username' | 'email' | 'password' | 'confirm' | null;
 
 export default function Signup() {
   const router = useRouter();
+  const [hasDraft, setHasDraft] = useState(false);
+  useEffect(() => { setHasDraft(Boolean(getGuestDraft()?.items.length)); }, []);
   const [accepted, setAccepted] = useState(false);
   const [notice, setNotice] = useState('');
   const [username, setUsername] = useState('');
@@ -115,7 +118,7 @@ export default function Signup() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { intended_username: username, terms_version: LEGAL_VERSION, privacy_version: LEGAL_VERSION, terms_accepted_at: new Date().toISOString() } },
+      options: { emailRedirectTo: Platform.OS === 'web' ? `${window.location.origin}/` : undefined, data: { rankr_walkthrough_required: true, intended_username: username, terms_version: LEGAL_VERSION, privacy_version: LEGAL_VERSION, terms_accepted_at: new Date().toISOString() } },
     });
     if (signUpError) {
       setError(signUpError.message);
@@ -128,7 +131,7 @@ export default function Signup() {
       // Email confirmation flow — no user yet. The username is stashed in
       // user_metadata for a future post-confirmation handler to consume.
       setLoading(false);
-      setNotice('Check your email for a confirmation link, then return to log in.');
+      setNotice(hasDraft ? 'Check your email, then return in this same browser to save your starter list. Device drafts expire after 7 days.' : 'Check your email for a confirmation link, then return to log in.');
       return;
     }
 
@@ -144,9 +147,11 @@ export default function Signup() {
       return;
     }
 
-    // 5. Success.
+    // Refresh the route guard after profile creation; preserve the guest draft.
+    const refresh = await supabase.auth.updateUser({ data: { rankr_walkthrough_required: true } });
+    if (refresh.error) throw refresh.error;
     setLoading(false);
-    router.replace('/(tabs)' as any);
+    router.replace(hasDraft ? '/save-list' : '/walkthrough?variant=full' as any);
     } catch { setError('Could not create your account. Check your connection and try again.'); }
     finally { setLoading(false); }
   };
@@ -204,11 +209,12 @@ export default function Signup() {
           <Text style={styles.logoText}>R</Text>
         </View>
         )}
-        <Text accessibilityRole="header" style={styles.appName}>Create your account</Text>
-        <Text style={styles.tagline}>Start ranking what matters to you</Text>
+        <Text accessibilityRole="header" style={styles.appName}>{hasDraft ? 'Keep your first list' : 'Create your account'}</Text>
+        <Text style={styles.tagline}>{hasDraft ? 'Your list is ready. Create an account to save it privately.' : 'Start ranking what matters to you'}</Text>
       </View>
 
       <View style={styles.form}>
+        <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/try' as any)} style={{ paddingVertical: 12 }}><Text style={{ color: colors.purpleLight }}>{hasDraft ? 'Back to my starter list' : 'Try building a list first'}</Text></TouchableOpacity>
         {error ? (
           <View accessibilityRole="alert" style={styles.errorBox}>
             <Ionicons name="alert-circle-outline" size={16} color="#ff8585" />
