@@ -28,3 +28,7 @@ Rotation: add the new key while retaining old keys; switch active ID; read and r
 5. Cut reads to encrypted APIs, revoke legacy plaintext access/writes, then remove plaintext columns only after the agreed backup/retention window and an explicit irreversible migration review. Existing backups/logs and client caches also contain old plaintext; document their lifecycle.
 
 No complete migration, data purge, production keys, or production deployment is included here.
+
+## Missing user_blocks prerequisite recovery
+
+The live attempt on September 30 failed because public.user_blocks was absent. Migration 202609300000 now creates the missing block table with owner-only RLS before the photo migration. Existing block tables are left untouched. The two original migrations use transactions; verify remote migration history and bucket state rather than assuming a partial change persisted. Do not mark the failed photo migration as applied or remove its block checks. Pull the latest main, run db push --linked --dry-run, confirm all three pending migrations, then retry db push --linked. Any further missing-table error requires inspection of the historical schema, not applying all old Phase SQL blindly.
