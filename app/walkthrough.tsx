@@ -13,7 +13,7 @@ const steps: Step[] = [
     { icon: 'add-outline', title: 'Create a list', detail: 'Open Lists, choose New, and give it a name.' },
     { icon: 'search-outline', title: 'Find a favorite', detail: 'Add titles to your list and build a collection that feels like you.' },
   ] },
-  { title: 'Make the list yours.', body: 'Your first order is a starting point. Revisit a favorite, add a note, or compare two titles as your taste changes.', icon: 'swap-vertical-outline', examples: [
+  { title: 'Make the list yours.', body: 'Add 10 favorites to unlock numeric scores. You can order and save a smaller list now, then compare titles as your taste changes.', icon: 'swap-vertical-outline', examples: [
     { icon: 'create-outline', title: 'Remember why it matters', detail: 'Open an item to add your thoughts and memories.' },
     { icon: 'swap-vertical-outline', title: 'Revisit your order', detail: 'Compare favorites to refine where they belong in your ranking.' },
   ] },

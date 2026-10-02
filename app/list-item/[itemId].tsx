@@ -1,3 +1,4 @@
+import { getScoreProgress } from '@/lib/scoreProgress';
 /**
  * app/list-item/[itemId].tsx
  *
@@ -90,6 +91,7 @@ export default function ListItemDetailScreen() {
   const { itemId } = useLocalSearchParams<{ itemId: string }>();
 
   const [loading, setLoading] = useState(true);
+  const [scoresUnlocked, setScoresUnlocked] = useState(false);
   const [detail, setDetail] = useState<ListItemDetail | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -118,6 +120,7 @@ export default function ListItemDetailScreen() {
   const load = useCallback(async () => {
     if (!itemId) return;
     setLoading(true);
+    setScoresUnlocked(false);
 
     const result = await fetchListItemWithOwner(itemId);
     if (!result) {
@@ -126,6 +129,8 @@ export default function ListItemDetailScreen() {
       return;
     }
     setDetail(result);
+    const scoreCount = await supabase.from('list_items').select('id', { count: 'exact', head: true }).eq('list_id', result.list_id).or('bookmarked.is.null,bookmarked.eq.false');
+    setScoresUnlocked(!scoreCount.error && getScoreProgress(scoreCount.count ?? 0).unlocked);
 
     const { data: { user } } = await supabase.auth.getUser();
     const uid = user?.id ?? null;
@@ -359,7 +364,7 @@ export default function ListItemDetailScreen() {
                   </Text>
                 </View>
               ) : null}
-              {detail.rank !== null ? (
+              {detail.rank !== null && scoresUnlocked ? (
                 <View style={[styles.rankBadge, { borderColor: scoreColor(detail.rank) }]}>
                   <Text style={[styles.rankText, { color: scoreColor(detail.rank) }]}>
                     {Number(detail.rank).toFixed(1)}

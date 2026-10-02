@@ -1,5 +1,7 @@
 import { BrandWordmark } from '@/components/BrandWordmark';
 import { Button } from '@/components/Button';
+import { ScoreProgress } from '@/components/ScoreProgress';
+import { guestScore } from '@/lib/scoreProgress';
 import { clearGuestDraft, createGuestDraft, getGuestDraft, GUEST_DRAFT_MAX_ITEMS, isGuestDraftPersistenceAvailable, saveGuestDraft, type GuestCategory, type GuestDraft, type GuestDraftItem } from '@/lib/guestDraft';
 import media from '@/lib/marketing-media.json';
 import { supabase } from '@/lib/supabase';
@@ -66,7 +68,7 @@ export default function TryRankr() {
     try { itemId = createGuestDraft(draft.category, name.trim()).id; }
     catch { setError('Could not add this title. Please try again.'); return; }
     if (persist({ ...draft, items: [...draft.items, { id: itemId, title: name.trim(), ...(image ? { image_url: image } : {}) }] })) {
-      setEntry(''); setStatus(`${name.trim()} added to your list.`); setUndoItems(null);
+      setEntry(''); setStatus(draft.items.length === 9 ? `${name.trim()} added. Ten favorites reached — scores are unlocked.` : `${name.trim()} added to your list.`); setUndoItems(null);
     }
   };
   const move = (index: number, delta: number) => {
@@ -102,6 +104,7 @@ export default function TryRankr() {
     {!draft ? <View style={styles.setup}>
       <Text accessibilityRole="header" style={styles.title}>Start with what you love.</Text>
       <Text style={styles.lead}>Make a list, add a few favorites, and put them in order. No account needed to try it.</Text>
+      <Text style={styles.helper}>Add 10 favorites to unlock numeric scores. You can save a smaller list anytime.</Text>
       <Text style={styles.label}>What are you ranking?</Text>
       <View style={styles.categories}>{categories.map(c => <Pressable key={c.value} accessibilityRole="button" accessibilityState={{ selected: c.value === category }} accessibilityLabel={c.label} onPress={() => { setCategory(c.value); if (title.startsWith('My favorite ')) setTitle(`My favorite ${c.label.toLowerCase()}`); }} style={[styles.category, c.value === category && styles.selected]}>
         <Ionicons name={c.icon} size={24} color={c.value === category ? colors.purpleLight : colors.textMuted} /><Text style={[styles.categoryLabel, c.value === category && { color: colors.text }]}>{c.label}</Text>
@@ -142,11 +145,13 @@ export default function TryRankr() {
         </View>
         <View style={styles.rankingColumn}>
           <View style={styles.rankingHeading}><Text accessibilityRole="header" style={styles.sectionTitle}>Your ranking</Text><Text style={styles.helper}>{draft.items.length} / 20</Text></View>
+          <ScoreProgress count={draft.items.length} guest />
           {!draft.items.length ? <View style={styles.empty}><Ionicons name="list-outline" size={36} color={colors.textMuted} /><Text style={styles.emptyText}>Your first favorite goes here.</Text><Text style={styles.helper}>Add a title to begin your ranking.</Text></View> : <>
             {draft.items.map((item, index) => <View key={item.id} style={styles.rankedRow}>
               <Text style={styles.rank} accessibilityLabel={`Rank ${index + 1}`}>{index + 1}</Text>
               {item.image_url ? <Image source={{ uri: artworkUri(item.image_url) }} accessibilityLabel={`Artwork for ${item.title}`} style={styles.rankedImage} contentFit="cover" /> : <View style={styles.rankedImagePlaceholder}><Ionicons name={activeCategory.icon} size={22} color={colors.textMuted} /></View>}
               <Text style={styles.itemTitle}>{item.title}</Text>
+              {guestScore(index, draft.items.length) !== null ? <Text accessibilityLabel={`Score ${guestScore(index, draft.items.length)?.toFixed(1)} out of 10`} style={styles.score}>{guestScore(index, draft.items.length)?.toFixed(1)}</Text> : null}
               <View style={styles.rowActions}>
                 <Pressable accessibilityRole="button" accessibilityLabel={`Move ${item.title} up`} disabled={index === 0} accessibilityState={{ disabled: index === 0 }} onPress={() => move(index, -1)} style={[styles.iconButton, index === 0 && styles.disabled]}><Ionicons name="arrow-up" size={18} color={colors.textMuted} /></Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={`Move ${item.title} down`} disabled={index === draft.items.length - 1} accessibilityState={{ disabled: index === draft.items.length - 1 }} onPress={() => move(index, 1)} style={[styles.iconButton, index === draft.items.length - 1 && styles.disabled]}><Ionicons name="arrow-down" size={18} color={colors.textMuted} /></Pressable>
@@ -187,6 +192,7 @@ const styles = StyleSheet.create({
   addRow: { flexDirection: 'row', gap: 8 }, addButton: { width: 52, height: 52, backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center', borderRadius: 8 }, disabled: { opacity: 0.45 }, helper: { color: colors.textMuted, fontSize: 13, lineHeight: 21, marginTop: 8 },
   suggestions: { marginTop: 8 }, suggestionsToggle: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingVertical: 10 }, suggestion: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 70, borderBottomWidth: 1, borderBottomColor: colors.borderSoft, paddingVertical: 10 }, suggestionImage: { width: 36, height: 48, borderRadius: 4, backgroundColor: colors.card }, suggestionTitle: { flex: 1, color: colors.text, fontSize: 14, lineHeight: 21 }, pressed: { opacity: 0.7 },
   rankingHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }, empty: { minHeight: 210, alignItems: 'center', justifyContent: 'center', gap: 8, borderTopWidth: 1, borderTopColor: colors.border }, emptyText: { color: colors.text, fontSize: 16 },
+  score: { color: colors.purpleLight, fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
   rankedRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border }, rank: { color: colors.textMuted, fontSize: 16, width: 20, fontVariant: ['tabular-nums'] }, rankedImage: { width: 38, height: 50, borderRadius: 4, backgroundColor: colors.card }, rankedImagePlaceholder: { width: 38, height: 50, borderRadius: 4, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center' }, itemTitle: { color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 23, flex: 1, minWidth: 110 }, rowActions: { flexDirection: 'row', marginLeft: 'auto' }, iconButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', borderRadius: 6 },
   comparison: { marginTop: 28 }, choices: { flexDirection: 'row', gap: 12, marginTop: 14 }, choice: { flex: 1, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.card, borderRadius: 12, padding: 16, justifyContent: 'space-between', gap: 24 }, choiceTitle: { color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 24 }, status: { color: colors.textMuted, fontSize: 14, lineHeight: 23, marginTop: 16 },
   textLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingVertical: 10 }, link: { color: colors.purpleLight, fontSize: 14, lineHeight: 22, fontWeight: '600' }, saveArea: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 24, paddingTop: 24 }, saveNote: { color: colors.textMuted, fontSize: 14, lineHeight: 22, marginTop: 12 }, footer: { marginTop: 28, borderTopWidth: 1, borderTopColor: colors.border }, discard: { marginTop: 16 }, discardActions: { flexDirection: 'row', gap: 12, marginTop: 12, flexWrap: 'wrap' },

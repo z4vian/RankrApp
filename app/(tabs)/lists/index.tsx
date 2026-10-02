@@ -1,4 +1,7 @@
-import { FadeSlideIn, ListCardSkeleton, PressableCard } from '@/components';
+import { confirmListDeletion } from '@/lib/confirmListDeletion';
+import { deleteOwnedList } from '@/lib/deleteList';
+import { useActiveList } from '@/lib/ListContext';
+import { FadeSlideIn, ListCardSkeleton, PressableCard, useToast } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -6,7 +9,7 @@ import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  Alert, FlatList, Platform,
+  FlatList, Platform,
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
@@ -23,6 +26,9 @@ type List = {
 
 export default function ListsScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { activeList, setActiveList } = useActiveList();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lists, setLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,21 +82,20 @@ export default function ListsScreen() {
   useFocusEffect(useCallback(() => { fetchLists(); }, []));
 
   const handleDelete = (list: List) => {
-    Alert.alert(
-      'Delete List',
-      `Are you sure you want to delete "${list.title}"? This will also delete all items in it.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.from('lists').delete().eq('id', list.id);
-            fetchLists();
-          },
-        },
-      ]
-    );
+    if (deletingId) return;
+    confirmListDeletion(list.title, () => {
+      setDeletingId(list.id);
+      void (async () => {
+        try {
+          await deleteOwnedList(list.id);
+          setLists(previous => previous.filter(item => item.id !== list.id));
+          if (activeList?.id === list.id) setActiveList(null);
+          showToast('List deleted.');
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Could not delete your list. Please try again.', { tone: 'error' });
+        } finally { setDeletingId(null); }
+      })();
+    });
   };
 
   const categoryIcon = (category: string) => {
@@ -108,6 +113,9 @@ export default function ListsScreen() {
   const renderRightActions = (list: List) => (
     <TouchableOpacity
       style={styles.deleteAction}
+      accessibilityRole="button"
+      accessibilityLabel={`Delete ${list.title}`}
+      disabled={deletingId !== null}
       onPress={() => handleDelete(list)}
     >
       <Ionicons name="trash-outline" size={22} color="#fff" />
@@ -162,6 +170,7 @@ export default function ListsScreen() {
         </View>
       </PressableCard>
     </Swipeable>
+    {Platform.OS === 'web' ? <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Delete ${item.title}`} disabled={deletingId !== null} onPress={() => handleDelete(item)} style={{ minHeight: 44, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 }}><Ionicons name="trash-outline" size={16} color={colors.textMuted} /><Text style={{ color: colors.textMuted, fontSize: 13 }}>{deletingId === item.id ? 'Deleting…' : 'Delete list'}</Text></TouchableOpacity> : null}
     </FadeSlideIn>
   );
 

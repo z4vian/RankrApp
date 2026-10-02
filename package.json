@@ -9,7 +9,12 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "vercel-build": "expo export -p web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:unit",
+    "test:unit": "node --experimental-strip-types --test tests/backend/*.test.ts",
+    "test:web": "node --test tests/web/*.test.cjs",
+    "test:ci": "npm run typecheck && npm run test:unit && npm run vercel-build && npm run test:web"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -51,9 +56,11 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "playwright": "^1.63.0",
     "typescript": "~5.9.2"
   },
   "private": true
