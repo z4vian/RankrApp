@@ -30,4 +30,4 @@ The database job can be run with an isolated PostgreSQL 15 server and psql. Firs
 
 ## Before production
 
-Open a PR into main and inspect both check results. Require both named checks in main branch protection, with the branch up to date. Vercel deploys main; a push workflow alone does not delay deployment, so the pre-merge required-check rule is the gate. Browser tests use Chromium only; native devices and real-account production save/delete should receive a separate smoke check.
+Main branch protection requires both named checks and an up-to-date branch, including administrator merges. Open a PR into main and inspect both check results; direct unchecked pushes are rejected. Vercel deploys main; a push workflow alone does not delay deployment, so the pre-merge required-check rule is the gate. Browser tests use Chromium only; native devices and real-account production save/delete should receive a separate smoke check.

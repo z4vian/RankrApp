@@ -2,7 +2,9 @@
 
 This guide describes the source on `codex/pr-checks-and-list-fixes`, including guest onboarding, score milestones, deletion and CI. It distinguishes implemented code from production setup that still needs verification.
 
-![Rankr system architecture](architecture.svg)
+![Rankr system architecture](architecture.png)
+
+[Download the scalable SVG](architecture.svg).
 
 ## 1. Start with the four layers
 
