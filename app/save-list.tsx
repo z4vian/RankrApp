@@ -1,5 +1,6 @@
 import { BrandWordmark } from '@/components/BrandWordmark';
 import { Button } from '@/components/Button';
+import { ScoreProgress } from '@/components/ScoreProgress';
 import { clearGuestDraft, getGuestDraft, type GuestDraft } from '@/lib/guestDraft';
 import { importGuestDraft } from '@/lib/guestImport';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +52,7 @@ export default function SaveList() {
       {draft.items.map((item, i) => <View key={item.id} style={styles.row}><Text style={styles.rank}>{i + 1}</Text><Text style={styles.item}>{item.title}</Text></View>)}
       <Text style={styles.body}>Private · {draft.items.length} {draft.items.length === 1 ? 'favorite' : 'favorites'}</Text>
     </View> : null}
+    {draft ? <ScoreProgress count={draft.items.length} guest /> : null}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     {draft?.items.length ? <><Button label="Save my list privately" onPress={save} loading={busy} disabled={busy} />
       <Button label="Edit my starter list" variant="ghost" disabled={busy} onPress={() => router.replace('/try' as any)} />

@@ -1,3 +1,7 @@
+import { confirmListDeletion } from '@/lib/confirmListDeletion';
+import { deleteOwnedList } from '@/lib/deleteList';
+import { ScoreProgress } from '@/components/ScoreProgress';
+import { getScoreProgress } from '@/lib/scoreProgress';
 import { AnimatedNumber, useToast } from '@/components';
 import { useActiveList } from '@/lib/ListContext';
 import { UserPhoto } from '@/components/UserPhoto';
@@ -49,7 +53,8 @@ export default function ListDetail() {
   }>();
   const router = useRouter();
   const { showToast } = useToast();
-  const { setActiveList } = useActiveList();
+  const { activeList, setActiveList } = useActiveList();
+  const [deletingList, setDeletingList] = useState(false);
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'rankings' | 'saved'>('rankings');
@@ -65,6 +70,8 @@ export default function ListDetail() {
   const [listCategory, setListCategory] = useState<Category>('movies');
   const [listOwnerId, setListOwnerId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const isOwner = Boolean(currentUserId && listOwnerId === currentUserId);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['70%', '95%'], []);
@@ -245,7 +252,8 @@ export default function ListDetail() {
     ? tabItems
     : tabItems.filter(i => i.title.toLowerCase().includes(searchTrimmed));
 
-  const avgScore = rankedItems.length > 0
+  const scoresUnlocked = getScoreProgress(allRankableItems.length).unlocked;
+  const avgScore = scoresUnlocked && rankedItems.length > 0
     ? (rankedItems.reduce((sum, i) => sum + (i.rank ?? 0), 0) / rankedItems.length).toFixed(1)
     : null;
 
@@ -270,20 +278,20 @@ export default function ListDetail() {
   };
 
   const handleDeleteList = () => {
-    Alert.alert(
-      'Delete List',
-      `Are you sure you want to delete "${title}"? This will also delete all ${items.length} items in it.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete', style: 'destructive',
-          onPress: async () => {
-            await supabase.from('lists').delete().eq('id', id);
-            router.back();
-          },
-        },
-      ]
-    );
+    if (deletingList || !isOwner) return;
+    confirmListDeletion(listTitle || String(title || 'this list'), () => {
+      setDeletingList(true);
+      void (async () => {
+        try {
+          await deleteOwnedList(String(id));
+          if (activeList?.id === id) setActiveList(null);
+          showToast('List deleted.');
+          router.replace('/(tabs)/lists' as any);
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Could not delete your list. Please try again.', { tone: 'error' });
+        } finally { setDeletingList(false); }
+      })();
+    });
   };
 
   const openEditSheet = (item: ListItem) => {
@@ -413,15 +421,15 @@ export default function ListDetail() {
             ) : null}
           </View>
           {activeTab === 'rankings' && (
-            isRanked ? (
+            isRanked && scoresUnlocked ? (
               <View style={[styles.scoreBadge, { borderColor: scoreColor(item.rank) }]}>
                 <Text style={[styles.scoreText, { color: scoreColor(item.rank) }]}>
                   {Number(item.rank).toFixed(1)}
                 </Text>
               </View>
             ) : (
-              <View style={[styles.scoreBadge, { borderColor: '#333' }]}>
-                <Text style={[styles.scoreText, { color: '#444' }]}>—</Text>
+              <View style={[styles.scoreBadge, { borderColor: colors.borderStrong }]}>
+                <Text style={[styles.scoreText, { color: colors.textMuted }]}>—</Text>
               </View>
             )
           )}
@@ -461,8 +469,8 @@ export default function ListDetail() {
                     <TouchableOpacity style={styles.coverBtn} onPress={() => router.back()}>
                       <Ionicons name="chevron-back" size={22} color="#fff" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.coverBtn} onPress={handleDeleteList}>
-                      <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Delete list" accessibilityState={{ disabled: deletingList || !isOwner }} disabled={deletingList || !isOwner} style={styles.coverBtn} onPress={handleDeleteList}>
+                      {deletingList ? <ActivityIndicator accessibilityLabel="Deleting list" size="small" color={colors.purpleLight} /> : <Ionicons name="trash-outline" size={18} color={colors.error} />}
                     </TouchableOpacity>
                   </View>
                   <View style={styles.coverTitleArea}>
@@ -537,20 +545,7 @@ export default function ListDetail() {
                   </View>
                 </View>
 
-                {/* Progress */}
-                {allRankableItems.length < 10 && allRankableItems.length > 0 && (
-                  <View style={styles.progressBox}>
-                    <View style={styles.progressHeader}>
-                      <Text style={styles.progressText}>
-                        {10 - allRankableItems.length} more to unlock ranking
-                      </Text>
-                      <Text style={styles.progressPercent}>{allRankableItems.length}/10</Text>
-                    </View>
-                    <View style={styles.progressBarBg}>
-                      <View style={[styles.progressBarFill, { width: `${(allRankableItems.length / 10) * 100}%` as any }]} />
-                    </View>
-                  </View>
-                )}
+                <View style={{ marginHorizontal: 16 }}><ScoreProgress count={allRankableItems.length} scored={rankedItems.length > 0} /></View>
 
                 {/* T1 Fix 3 — in-list search. Sits above the Rankings /
                     Saved tab toggle. Filters the local `items` array
@@ -692,7 +687,7 @@ export default function ListDetail() {
                   {editingItem.subtitle ? (
                     <Text style={styles.sheetSubtitle}>{editingItem.subtitle}</Text>
                   ) : null}
-                  {editingItem.rank !== null && (
+                  {editingItem.rank !== null && scoresUnlocked && (
                     <View style={[styles.sheetScoreBadge, { borderColor: scoreColor(editingItem.rank) }]}>
                       <Text style={[styles.sheetScoreText, { color: scoreColor(editingItem.rank) }]}>
                         {Number(editingItem.rank).toFixed(1)}
@@ -961,7 +956,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
   },
   coverBtn: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center',
   },
   coverTitleArea: { position: 'absolute', bottom: 20, left: 20, right: 20 },

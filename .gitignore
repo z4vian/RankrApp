@@ -47,3 +47,7 @@ app-example
 
 # Claude Code local state
 .claude/
+
+# Automated browser test output
+/test-results/
+/playwright-report/
